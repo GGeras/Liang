@@ -1,0 +1,52 @@
+# Liang · Estoque Mundo Mix
+
+PWA mobile para controle de estoque de peças de celular (telas, tampas, conectores…) com perfis **administrador** e **vendedor**.
+
+## Stack
+- **Front:** Angular 20 (standalone, signals, zoneless) como PWA instalável
+- **Banco/Auth/Fotos:** Supabase (projeto `Liang`, região São Paulo)
+- **Hospedagem:** Cloudflare Pages
+
+## Regras principais
+| Regra | Onde é garantida |
+|---|---|
+| Código `00-00` (tipo-produto), gerado de `tipo_id` + `seq` | coluna gerada em `produtos` |
+| Variação (cor/qualidade) tem preço atacado/varejo e estoque próprios | `variacoes` + `estoque` |
+| Histórico imutável (entrada, venda, ajuste, cancelamento) | `movimentos` com trigger que bloqueia UPDATE/DELETE |
+| Estoque só muda por função (`registrar_venda`, `registrar_entrada`, `ajustar_estoque`, `cancelar_venda`) | RLS sem escrita direta |
+| Vendedor não altera preço: o servidor usa o preço do catálogo | `registrar_venda` |
+| Cartão só no varejo | constraint `cartao_so_varejo` |
+| Compatibilidade "a confirmar" não aparece para o vendedor | policy `compat_select` |
+| Venda offline: fila criptografada (AES-GCM, chave não exportável) no aparelho; ao conectar, quem chega primeiro leva o estoque; a recusada vira **ocorrência** para o admin | `src/app/core/cofre.ts`, `vendas.service.ts` |
+| Cancelamento só admin, com motivo e opção de devolver estoque | `cancelar_venda` |
+
+## Estrutura
+```
+supabase/migrations/   SQL do banco (aplicado no projeto Liang)
+supabase/functions/    Edge function `usuarios` (criar usuário / trocar senha)
+src/app/core/          Supabase, auth, catálogo offline, fila de vendas, cofre criptografado
+src/app/features/      Telas: vender, catálogo, minhas vendas, admin (painel, estoque, produtos, vendas, movimentações, ocorrências, usuários)
+```
+
+## Rodar local
+```bash
+npm install
+npm start          # http://localhost:4200
+npm run build      # saída em dist/liang/browser
+```
+
+## Deploy no Cloudflare Pages
+1. Cloudflare → Workers & Pages → Create → Pages → Connect to Git → `GGeras/Liang`
+2. Project name: `liang`
+3. Build command: `npm run build`
+4. Build output directory: `dist/liang/browser`
+5. Environment variable: `NODE_VERSION = 22`
+
+`public/_redirects` já trata as rotas do app e `public/_headers` evita cache do service worker.
+
+## Primeiro administrador
+Crie o usuário em Supabase → Authentication → Add user (marque *Auto Confirm*), depois rode no SQL Editor:
+```sql
+update perfis set papel = 'admin', nome = 'Seu nome' where id = (select id from auth.users where email = 'seu@email.com');
+```
+Os próximos usuários são criados pelo próprio app em **Mais › Usuários**.

@@ -1,0 +1,363 @@
+/* =====================================================================
+   Liang — sistema visual
+   Inspirado nas etiquetas de gaveta de peças: papel acinzentado,
+   tinta azul-marinho, etiqueta amarela com o código 00-00.
+   ===================================================================== */
+:root {
+  --paper: #eef1f4;
+  --surface: #ffffff;
+  --ink: #172130;
+  --muted: #5b6676;
+  --line: #d5dbe2;
+  --cobalt: #2340c8;
+  --cobalt-press: #1a31a0;
+  --label: #ffd447;
+  --label-edge: #e3b81f;
+  --ok: #17804f;
+  --ok-bg: #e3f3ea;
+  --danger: #c42f2f;
+  --danger-bg: #fbe7e7;
+  --warn: #9a5b00;
+  --warn-bg: #fff3d6;
+
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 20px;
+
+  --nav-h: 64px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+
+  --font: 'Archivo', system-ui, sans-serif;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.15;
+  font-stretch: 112%;
+}
+h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+h2 {
+  font-size: 1.15rem;
+  font-weight: 750;
+}
+h3 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+p {
+  margin: 0;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.muted {
+  color: var(--muted);
+}
+.small {
+  font-size: 0.85rem;
+}
+
+:focus-visible {
+  outline: 3px solid var(--cobalt);
+  outline-offset: 2px;
+}
+
+/* ---------- Etiqueta de código (o elemento-assinatura) ---------- */
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12em 0.5em 0.1em;
+  background: var(--label);
+  color: var(--ink);
+  border: 1px solid var(--label-edge);
+  border-radius: 3px;
+  font-weight: 800;
+  font-stretch: 125%;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  /* furo da etiqueta de gaveta */
+  background-image: radial-gradient(circle at 0.32em 50%, var(--paper) 0.13em, transparent 0.14em);
+  padding-left: 0.75em;
+}
+
+/* ---------- Botões ---------- */
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0 1.1rem;
+  border: 0;
+  border-radius: var(--r-md);
+  font: inherit;
+  font-weight: 700;
+  font-stretch: 105%;
+  cursor: pointer;
+  background: var(--cobalt);
+  color: #fff;
+  transition: background 0.12s, transform 0.08s;
+  text-decoration: none;
+}
+.btn:active {
+  transform: scale(0.98);
+  background: var(--cobalt-press);
+}
+.btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.btn.sec {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.btn.sec:active {
+  background: var(--paper);
+}
+.btn.perigo {
+  background: var(--danger);
+}
+.btn.ok {
+  background: var(--ok);
+}
+.btn.bloco {
+  width: 100%;
+}
+.btn.pequeno {
+  min-height: 36px;
+  padding: 0 0.75rem;
+  font-size: 0.9rem;
+  border-radius: var(--r-sm);
+}
+.btn-icone {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  cursor: pointer;
+  font: inherit;
+}
+.btn-icone:active {
+  background: var(--line);
+}
+
+/* ---------- Campos ---------- */
+.campo {
+  display: grid;
+  gap: 0.3rem;
+}
+.campo > span {
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+.campo input,
+.campo select,
+.campo textarea,
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.65rem 0.8rem;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+}
+.campo textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus,
+.input:focus {
+  outline: none;
+  border-color: var(--cobalt);
+}
+
+/* Seletor segmentado (atacado/varejo, pagamento) */
+.segmento {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--line);
+  border-radius: var(--r-md);
+}
+.segmento button {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  font-weight: 650;
+  color: var(--muted);
+  cursor: pointer;
+}
+.segmento button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(23 33 48 / 0.15);
+}
+.segmento button:disabled {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+
+/* ---------- Superfícies ---------- */
+.painel {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 1rem;
+}
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.lista > li + li {
+  border-top: 1px solid var(--line);
+}
+
+.pagina {
+  padding: 1rem 1rem calc(var(--nav-h) + var(--safe-b) + 1.5rem);
+  max-width: 760px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--paper);
+  color: var(--muted);
+}
+.selo.ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.selo.perigo {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.selo.alerta {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.vazio {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.erro-msg {
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--r-md);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ---------- Folha inferior (diálogos) ---------- */
+dialog.folha {
+  margin: auto 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 92dvh;
+  border: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: 1.25rem 1rem calc(1rem + var(--safe-b));
+  background: var(--surface);
+  color: var(--ink);
+  overflow-y: auto;
+}
+dialog.folha::backdrop {
+  background: rgb(23 33 48 / 0.5);
+}
+dialog.folha[open] {
+  animation: subir 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (min-width: 720px) {
+  dialog.folha {
+    margin: auto;
+    max-width: 520px;
+    border-radius: var(--r-lg);
+  }
+}
+@keyframes subir {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.svg-i {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
