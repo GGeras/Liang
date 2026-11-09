@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { CatalogoService } from '../../core/catalogo.service';
 import { AuthService } from '../../core/auth.service';
-import { Icone, Toast } from '../../shared/ui';
+import { DataHoraPipe, Icone, Toast, formatarBRL } from '../../shared/ui';
 import { Tipo } from './produtos';
 
 interface Variacao {
@@ -19,6 +19,23 @@ interface Variacao {
   nova?: boolean;
 }
 
+interface Alteracao {
+  id: number;
+  tabela: string;
+  acao: 'criado' | 'alterado' | 'removido';
+  antes: Record<string, unknown> | null;
+  depois: Record<string, unknown> | null;
+  criado_em: string;
+  perfis: { nome: string } | null;
+}
+
+const CAMPOS: Record<string, string> = {
+  nome: 'nome', marca: 'marca', modelo: 'modelo', descricao: 'descrição', foto_url: 'foto', ativo: 'ativo',
+  tipo_id: 'tipo', seq: 'número', preco_atacado: 'atacado', preco_varejo: 'varejo', custo: 'custo',
+  codigo_barras: 'código de barras', estoque_minimo: 'estoque mínimo', status: 'situação', observacao: 'observação',
+};
+const PRECOS = new Set(['preco_atacado', 'preco_varejo', 'custo']);
+
 interface Compat {
   id: string;
   modelo: string;
@@ -29,7 +46,7 @@ interface Compat {
 
 @Component({
   selector: 'app-produto-form',
-  imports: [FormsModule, RouterLink, Icone],
+  imports: [FormsModule, RouterLink, Icone, DataHoraPipe],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -66,7 +83,7 @@ interface Compat {
 
       <section class="painel form">
         <h2>Produto</h2>
-        <label class="campo"><span>Nome</span><input [ngModel]="nome()" (ngModelChange)="nome.set($event)" placeholder="Ex.: Tela iPhone 11" /></label>
+        <label class="campo"><span>Nome</span><textarea class="nome-campo" rows="2" [ngModel]="nome()" (ngModelChange)="nome.set($event)" placeholder="Ex.: Tela iPhone 11"></textarea></label>
         <div class="grade2">
           <label class="campo"><span>Marca</span><input [ngModel]="marca()" (ngModelChange)="marca.set($event)" /></label>
           <label class="campo"><span>Modelo</span><input [ngModel]="modelo()" (ngModelChange)="modelo.set($event)" /></label>
@@ -139,6 +156,20 @@ interface Compat {
         </div>
       </section>
 
+      @if (historico().length) {
+        <section class="painel form">
+          <h2>Histórico de alterações</h2>
+          <ul class="hist">
+            @for (h of historico(); track h.id) {
+              <li>
+                <span class="muted small">{{ h.criado_em | dataHora }} · {{ h.perfis?.nome ?? 'Sistema' }}</span>
+                <span>{{ descrever(h) }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
       <button class="btn bloco salvar" (click)="salvar()" [disabled]="salvando() || !valido()">{{ salvando() ? 'Salvando…' : 'Salvar produto' }}</button>
       @if (!valido()) {
         <p class="muted small centro">Preencha tipo, número, nome e os preços de cada variação.</p>
@@ -146,7 +177,8 @@ interface Compat {
     </main>
   `,
   styles: `
-    .titulo { flex: 1; font-size: 1.3rem; }
+    .titulo { flex: 1; font-size: 1.3rem; min-width: 0; }
+    .campo textarea.nome-campo { min-height: 0; resize: none; field-sizing: content; }
     .form { display: grid; gap: .9rem; }
     .grade2 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
     .span2 { grid-column: 1 / -1; }
@@ -154,17 +186,20 @@ interface Compat {
     .foto img { width: 72px; height: 72px; object-fit: cover; border-radius: var(--r-md); background: var(--paper); }
     .ativo { display: flex; align-items: center; gap: .5rem; font-weight: 600; }
     .ativo input { width: 20px; height: 20px; accent-color: var(--cobalt); }
-    .titulo-acao { display: flex; justify-content: space-between; align-items: center; }
+    .titulo-acao { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; }
     .variacao { border: 1.5px solid var(--line); border-radius: var(--r-md); padding: .9rem; margin: 0; display: grid; gap: .75rem; }
     .variacao.inativa { opacity: .6; }
     .rodape-var { display: flex; justify-content: space-between; align-items: center; }
     .compat { list-style: none; padding: 0; margin: 0; display: grid; gap: .8rem; }
-    .compat-linha { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem; align-items: center; }
+    .compat-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; align-items: center; }
     .compat .selo { border: 0; cursor: pointer; font: inherit; font-size: .78rem; font-weight: 700; }
     .obs { min-height: 40px; margin-top: .35rem; font-size: .9rem; }
-    .add-compat { display: grid; grid-template-columns: 1fr auto; gap: .5rem; }
+    .add-compat { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
     .salvar { position: sticky; bottom: calc(var(--nav-h) + var(--safe-b) + .75rem); box-shadow: 0 6px 18px rgb(35 64 200 / .3); }
     .centro { text-align: center; }
+    .hist { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; font-size: .92rem; }
+    .hist li { display: grid; padding-bottom: .6rem; border-bottom: 1px solid var(--line); }
+    .hist li:last-child { border-bottom: 0; padding-bottom: 0; }
   `,
 })
 export class ProdutoForm {
@@ -192,6 +227,7 @@ export class ProdutoForm {
   protected salvando = signal(false);
   protected enviandoFoto = signal(false);
   protected erro = signal('');
+  protected historico = signal<Alteracao[]>([]);
 
   protected codigo = computed(() =>
     this.tipoId() === null ? '00-00' : `${this.pad(this.tipoId()!)}-${this.seq() === null ? '__' : this.pad(Number(this.seq()))}`,
@@ -242,6 +278,29 @@ export class ProdutoForm {
     this.ativo.set(data.ativo);
     this.variacoes.set((data.variacoes as Variacao[]).sort((a, b) => a.nome.localeCompare(b.nome)));
     this.compat.set((data.compatibilidades as Compat[]).sort((a, b) => a.modelo.localeCompare(b.modelo)));
+    const ids = [data.id, ...(data.variacoes as Variacao[]).map((v) => v.id), ...(data.compatibilidades as Compat[]).map((c) => c.id)];
+    const h = await supabase
+      .from('alteracoes_catalogo')
+      .select('id, tabela, acao, antes, depois, criado_em, perfis(nome)')
+      .in('registro_id', ids)
+      .order('criado_em', { ascending: false })
+      .limit(30);
+    this.historico.set((h.data ?? []) as unknown as Alteracao[]);
+  }
+
+  /** "Variação Incell: varejo R$ 120,00 → R$ 150,00" */
+  protected descrever(h: Alteracao): string {
+    const reg = h.depois ?? h.antes ?? {};
+    const alvo =
+      h.tabela === 'variacoes' ? `Variação ${reg['nome']}` : h.tabela === 'compatibilidades' ? `Compatível ${reg['modelo']}` : 'Produto';
+    if (h.acao === 'criado') return `${alvo}: cadastrado`;
+    if (h.acao === 'removido') return `${alvo}: removido`;
+    const fmt = (k: string, v: unknown) =>
+      v === null || v === undefined || v === '' ? 'vazio' : PRECOS.has(k) ? formatarBRL(v as number) : typeof v === 'boolean' ? (v ? 'sim' : 'não') : String(v);
+    const mud = Object.keys(CAMPOS)
+      .filter((k) => JSON.stringify(h.antes?.[k]) !== JSON.stringify(h.depois?.[k]))
+      .map((k) => (k === 'descricao' || k === 'foto_url' ? `${CAMPOS[k]} alterada` : `${CAMPOS[k]} ${fmt(k, h.antes?.[k])} → ${fmt(k, h.depois?.[k])}`));
+    return `${alvo}: ${mud.join('; ') || 'alterado'}`;
   }
 
   /** Ao escolher o tipo num produto novo, sugere o próximo número livre. */

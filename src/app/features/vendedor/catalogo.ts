@@ -32,7 +32,7 @@ interface Grupo {
       <input class="input busca" type="search" placeholder="Buscar por código, nome, marca ou modelo"
         [ngModel]="termo()" (ngModelChange)="termo.set($event)" aria-label="Buscar no catálogo" />
 
-      <div class="tipos" role="group" aria-label="Filtrar por tipo">
+      <div class="rolagem-x" role="group" aria-label="Filtrar por tipo">
         <button class="chip" [attr.aria-pressed]="tipo() === null" (click)="tipo.set(null)">Todos</button>
         @for (t of tipos(); track t.id) {
           <button class="chip" [attr.aria-pressed]="tipo() === t.id" (click)="tipo.set(t.id)">{{ t.nome }}</button>
@@ -53,22 +53,20 @@ interface Grupo {
             <button class="produto" (click)="abrir(g)">
               <div class="linha1">
                 <span class="etiqueta">{{ g.codigo }}</span>
-                <span class="muted small">{{ g.tipo }}</span>
+                <strong class="clamp-2">{{ g.nome }}</strong>
               </div>
-              <strong>{{ g.nome }}</strong>
-              <table class="precos">
-                <thead><tr><th>Variação</th><th>Atacado</th><th>Varejo</th><th>Est.</th></tr></thead>
-                <tbody>
-                  @for (v of g.variacoes; track v.variacao_id) {
-                    <tr [class.zerado]="v.estoque <= 0">
-                      <td>{{ v.variacao }}</td>
-                      <td class="num">{{ v.preco_atacado | brl }}</td>
-                      <td class="num">{{ v.preco_varejo | brl }}</td>
-                      <td class="num" [class.baixo]="v.estoque <= v.estoque_minimo">{{ v.estoque }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+              <ul class="vars">
+                @for (v of g.variacoes; track v.variacao_id) {
+                  <li [class.zerado]="v.estoque <= 0">
+                    <span class="var-nome">{{ v.variacao }}</span>
+                    <span class="est num" [class.baixo]="v.estoque > 0 && v.estoque <= v.estoque_minimo">
+                      {{ v.estoque <= 0 ? 'Sem estoque' : v.estoque + ' em estoque' }}
+                    </span>
+                    <span class="preco"><span class="rot">Atacado</span><span class="num">{{ v.preco_atacado | brl }}</span></span>
+                    <span class="preco"><span class="rot">Varejo</span><span class="num">{{ v.preco_varejo | brl }}</span></span>
+                  </li>
+                }
+              </ul>
             </button>
           </li>
         }
@@ -107,17 +105,23 @@ interface Grupo {
   `,
   styles: `
     .busca { position: sticky; top: .5rem; z-index: 5; }
-    .tipos { display: flex; gap: .4rem; overflow-x: auto; padding-bottom: .25rem; scrollbar-width: none; }
-    .chip { flex: none; min-height: 36px; padding: 0 .9rem; border-radius: 99px; border: 1.5px solid var(--line); background: var(--surface); font: inherit; font-weight: 650; font-size: .88rem; color: var(--muted); cursor: pointer; }
-    .chip[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: #fff; }
-    .produto { width: 100%; display: grid; gap: .35rem; padding: .9rem 1rem; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
-    .linha1 { display: flex; justify-content: space-between; align-items: center; }
-    .precos { width: 100%; border-collapse: collapse; font-size: .88rem; margin-top: .25rem; }
-    .precos th { text-align: right; font-weight: 600; color: var(--muted); font-size: .75rem; padding-bottom: .15rem; }
-    .precos th:first-child, .precos td:first-child { text-align: left; }
-    .precos td { text-align: right; padding: .2rem 0 .2rem .5rem; }
-    .precos tr.zerado td { color: var(--muted); text-decoration: line-through; }
-    .precos td.baixo { color: var(--danger); font-weight: 750; text-decoration: none; }
+    .produto { width: 100%; display: grid; gap: .6rem; padding: .9rem 1rem; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+    .linha1 { display: grid; grid-template-columns: auto 1fr; gap: .6rem; align-items: start; }
+    .linha1 .etiqueta { margin-top: .1rem; }
+    .vars { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+    .vars li {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .15rem .75rem;
+      padding: .55rem .7rem; border-radius: var(--r-sm); background: var(--paper);
+    }
+    .var-nome { font-weight: 650; font-size: .92rem; min-width: 0; }
+    .est { justify-self: end; align-self: start; font-size: .78rem; font-weight: 650; color: var(--muted); }
+    .est.baixo { color: var(--warn); }
+    /* rótulo acima do valor: cabe R$ 9.999,99 nas duas colunas em 360px */
+    .preco { display: grid; font-size: .98rem; font-weight: 700; line-height: 1.25; margin-top: .2rem; }
+    .vars li .preco:last-child { justify-items: end; }
+    .preco .rot { font-size: .75rem; font-weight: 600; color: var(--muted); }
+    .vars li.zerado { opacity: .55; }
+    .vars li.zerado .est { color: var(--danger); }
     .topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
     .foto { width: 100%; max-height: 240px; object-fit: contain; background: var(--paper); border-radius: var(--r-md); margin-bottom: .75rem; }
     .desc { margin: .5rem 0 1rem; white-space: pre-line; }

@@ -42,28 +42,33 @@ interface ProdutoLinha {
 
       @for (g of grupos(); track g.tipo.id) {
         <section>
-          <h2 class="grupo"><span class="etiqueta">{{ pad(g.tipo.id) }}</span> {{ g.tipo.nome }} <span class="muted small">{{ g.itens.length }}/100</span></h2>
+          <h2 class="grupo"><span class="etiqueta">{{ pad(g.tipo.id) }}</span> <span class="uma-linha">{{ g.tipo.nome }}</span> <span class="muted small num conta">{{ g.itens.length }} de 100</span></h2>
           <ul class="lista">
             @for (p of g.itens; track p.id) {
               <li>
                 <a class="linha" [routerLink]="['/admin/produtos', p.id]" [class.inativo]="!p.ativo">
                   <span class="etiqueta">{{ p.codigo }}</span>
                   <span class="nome">
-                    <strong>{{ p.nome }}</strong>
-                    <span class="muted small">{{ resumoVar(p) }}</span>
+                    <strong class="clamp-2">{{ p.nome }}</strong>
+                    <span class="muted small uma-linha">{{ resumoVar(p) }}</span>
+                    @if (aConfirmar(p) || !p.ativo) {
+                      <span class="selos">
+                        @if (aConfirmar(p)) {
+                          <span class="selo alerta">{{ aConfirmar(p) }} compatib. a confirmar</span>
+                        }
+                        @if (!p.ativo) {
+                          <span class="selo">Inativo</span>
+                        }
+                      </span>
+                    }
                   </span>
-                  @if (aConfirmar(p)) {
-                    <span class="selo alerta" title="Compatibilidades a confirmar">{{ aConfirmar(p) }} a confirmar</span>
-                  }
-                  @if (!p.ativo) {
-                    <span class="selo">Inativo</span>
-                  }
                 </a>
               </li>
-            } @empty {
-              <li class="vazio small">Nenhum produto neste tipo.</li>
             }
           </ul>
+          @if (!g.itens.length) {
+            <p class="muted small sem-itens">Nenhum produto cadastrado.</p>
+          }
         </section>
       } @empty {
         @if (!carregando()) {
@@ -95,14 +100,18 @@ interface ProdutoLinha {
   `,
   styles: `
     .acoes { display: flex; gap: .4rem; }
-    .grupo { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
-    .linha { display: grid; grid-template-columns: auto 1fr auto; gap: .75rem; align-items: center; padding: .8rem 1rem; color: inherit; text-decoration: none; }
+    .grupo { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; min-width: 0; }
+    .grupo .conta { margin-left: auto; font-weight: 600; }
+    .linha { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .75rem; align-items: start; padding: .8rem 1rem; color: inherit; text-decoration: none; }
+    .linha .etiqueta { margin-top: .1rem; }
     .linha.inativo { opacity: .55; }
-    .nome { display: grid; min-width: 0; }
-    .nome .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nome { display: grid; gap: .1rem; min-width: 0; }
+    .selos { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .25rem; }
+    .sem-itens { padding: 0 .25rem; }
+    section:has(.sem-itens) .lista { display: none; }
     .topo { display: flex; justify-content: space-between; align-items: center; }
     .tipos { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: .5rem; }
-    .tipos li { display: grid; grid-template-columns: auto 1fr; gap: .6rem; align-items: center; }
+    .tipos li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .6rem; align-items: center; }
     .novo-tipo { display: grid; grid-template-columns: 90px 1fr; gap: .6rem; align-items: end; padding-top: 1rem; border-top: 1px solid var(--line); }
     .novo-tipo .btn { grid-column: 1 / -1; }
   `,

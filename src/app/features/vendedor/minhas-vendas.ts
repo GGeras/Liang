@@ -55,17 +55,17 @@ export const SELECT_VENDA =
         @for (v of lista(); track v.id) {
           <li class="venda" [class.cancelada]="v.status === 'cancelada'">
             <div class="topo">
-              <strong>{{ v.cliente_nome }}</strong>
+              <strong class="clamp-2">{{ v.cliente_nome }}</strong>
               <strong class="num">{{ v.total | brl }}</strong>
             </div>
             <span class="muted small">{{ v.criada_em | dataHora }} · {{ v.tipo_preco === 'atacado' ? 'Atacado' : 'Varejo' }} · {{ pag[v.forma_pagamento] }}</span>
             <ul class="itens">
               @for (i of v.venda_itens; track $index) {
-                <li><span class="num">{{ i.quantidade }}×</span> {{ i.variacoes.produtos.codigo }} {{ i.variacoes.produtos.nome }} · {{ i.variacoes.nome }}</li>
+                <li><span class="num">{{ i.quantidade }}×</span> <span class="clamp-2">{{ i.variacoes.produtos.codigo }} {{ i.variacoes.produtos.nome }} · {{ i.variacoes.nome }}</span></li>
               }
             </ul>
             @if (v.status === 'cancelada') {
-              <span class="selo perigo">Cancelada: {{ v.motivo_cancelamento }}</span>
+              <p class="nota-cancelada">Cancelada: {{ v.motivo_cancelamento }}</p>
             }
           </li>
         } @empty {
@@ -81,12 +81,15 @@ export const SELECT_VENDA =
   `,
   styles: `
     h2 { margin-bottom: .5rem; }
-    .fila li { display: grid; grid-template-columns: 1fr auto auto; gap: .75rem; padding: .75rem 1rem; align-items: center; }
+    .fila li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .1rem .75rem; padding: .75rem 1rem; align-items: center; }
+    .fila li > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fila li > .small { grid-row: 2; }
+    .fila li > strong { grid-row: 1 / span 2; grid-column: 2; }
     .venda { display: grid; gap: .3rem; padding: .85rem 1rem; }
     .venda.cancelada { opacity: .7; }
-    .topo { display: flex; justify-content: space-between; gap: 1rem; }
-    .itens { margin: .2rem 0 0; padding: 0; list-style: none; font-size: .88rem; }
-    .selo { justify-self: start; }
+    .topo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: start; }
+    .itens { margin: .2rem 0 0; padding: 0; list-style: none; font-size: .88rem; display: grid; gap: .2rem; }
+    .itens li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .4rem; }
   `,
 })
 export class MinhasVendas {

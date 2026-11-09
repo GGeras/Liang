@@ -25,11 +25,11 @@ const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado
     <main class="pagina">
       <header class="cabecalho">
         <h1>Movimentações</h1>
-        <button class="btn sec pequeno" (click)="exportar()"><i-con nome="baixar" /> Excel</button>
+        <button class="btn sec pequeno" (click)="exportar()"><i-con nome="baixar" /> <span class="rotulo-opcional">Excel</span></button>
       </header>
       <p class="muted small">Histórico completo e imutável: toda entrada, venda, ajuste e cancelamento.</p>
 
-      <div class="tipos" role="group" aria-label="Tipo de movimentação">
+      <div class="rolagem-x" role="group" aria-label="Tipo de movimentação">
         <button class="chip" [attr.aria-pressed]="tipo() === null" (click)="filtrar(null)">Todas</button>
         @for (t of tiposMov; track t) {
           <button class="chip" [attr.aria-pressed]="tipo() === t" (click)="filtrar(t)">{{ nomes[t] }}</button>
@@ -43,16 +43,19 @@ const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado
       <ul class="lista">
         @for (m of lista(); track m.id) {
           <li class="mov">
-            <span class="qtd num" [class.pos]="m.quantidade > 0" [class.neg]="m.quantidade < 0">{{ m.quantidade > 0 ? '+' : '' }}{{ m.quantidade }}</span>
-            <div>
-              <span class="etiqueta">{{ m.variacoes.produtos.codigo }}</span>
-              <strong> {{ m.variacoes.produtos.nome }}</strong> <span class="muted small">· {{ m.variacoes.nome }}</span>
-              <p class="muted small">{{ nomes[m.tipo] }} · {{ m.perfis?.nome }} · {{ m.criado_em | dataHora }}</p>
-              @if (m.motivo) {
-                <p class="small">{{ m.motivo }}</p>
-              }
+            <span class="etiqueta">{{ m.variacoes.produtos.codigo }}</span>
+            <div class="desc">
+              <strong class="clamp-2">{{ m.variacoes.produtos.nome }}</strong>
+              <span class="muted small uma-linha">{{ m.variacoes.nome }}</span>
             </div>
-            <span class="muted small num">saldo {{ m.saldo_apos }}</span>
+            <div class="qtd">
+              <span class="num" [class.pos]="m.quantidade > 0" [class.neg]="m.quantidade < 0">{{ m.quantidade > 0 ? '+' : '' }}{{ m.quantidade }}</span>
+              <span class="muted small num">saldo {{ m.saldo_apos }}</span>
+            </div>
+            <p class="meta small"><span class="tipo" [attr.data-tipo]="m.tipo">{{ nomes[m.tipo] }}</span> <span class="muted">{{ m.criado_em | dataHora }} · {{ m.perfis?.nome }}</span></p>
+            @if (m.motivo) {
+              <p class="motivo small">{{ m.motivo }}</p>
+            }
           </li>
         } @empty {
           @if (!carregando()) {
@@ -66,11 +69,15 @@ const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado
     </main>
   `,
   styles: `
-    .tipos { display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: none; }
-    .chip { flex: none; min-height: 36px; padding: 0 .9rem; border-radius: 99px; border: 1.5px solid var(--line); background: var(--surface); font: inherit; font-weight: 650; font-size: .88rem; color: var(--muted); cursor: pointer; }
-    .chip[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: #fff; }
-    .mov { display: grid; grid-template-columns: 3rem 1fr auto; gap: .6rem; padding: .8rem 1rem; align-items: start; }
-    .qtd { font-weight: 800; font-size: 1.15rem; }
+    .mov { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .35rem .65rem; padding: .8rem 1rem; align-items: start; }
+    .mov .etiqueta { margin-top: .1rem; }
+    .desc { display: grid; min-width: 0; line-height: 1.3; }
+    .qtd { display: grid; justify-items: end; line-height: 1.2; }
+    .qtd .num:first-child { font-weight: 800; font-size: 1.15rem; }
+    .meta, .motivo { grid-column: 1 / -1; }
+    .meta { display: flex; flex-wrap: wrap; column-gap: .4rem; }
+    .tipo { font-weight: 700; }
+    .motivo { padding: .4rem .6rem; background: var(--paper); border-radius: var(--r-sm); }
     .pos { color: var(--ok); }
     .neg { color: var(--danger); }
   `,

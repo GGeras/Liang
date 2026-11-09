@@ -49,7 +49,7 @@ interface Ocorrencia {
                 @if (f.erro) {
                   <li>Item removido do catálogo</li>
                 } @else {
-                  <li><span class="etiqueta">{{ f.codigo }}</span> {{ f.produto }} · {{ f.variacao }}: pediu {{ f.pedido }}, havia {{ f.disponivel }}</li>
+                  <li><span class="etiqueta">{{ f.codigo }}</span> <span><span class="clamp-2">{{ f.produto }} · {{ f.variacao }}</span><span class="small muted">Pediu {{ f.pedido }}, havia {{ f.disponivel }}</span></span></li>
                 }
               }
             </ul>
@@ -67,7 +67,9 @@ interface Ocorrencia {
   `,
   styles: `
     .oc { display: grid; gap: .5rem; padding: .9rem 1rem; justify-items: start; }
-    .faltas { margin: 0; padding-left: 1.1rem; font-size: .9rem; display: grid; gap: .3rem; }
+    .faltas { margin: 0; padding: 0; list-style: none; font-size: .9rem; display: grid; gap: .5rem; width: 100%; }
+    .faltas li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .5rem; align-items: start; }
+    .faltas li > span:last-child { display: grid; }
   `,
 })
 export class Ocorrencias {

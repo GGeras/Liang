@@ -15,7 +15,7 @@ import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
 
       <div class="filtros">
         <select class="input" [ngModel]="vendedor()" (ngModelChange)="vendedor.set($event); recarregar()" aria-label="Vendedor">
-          <option [ngValue]="null">Todos os vendedores</option>
+          <option [ngValue]="null">Todos vendedores</option>
           @for (p of vendedores(); track p.id) {
             <option [ngValue]="p.id">{{ p.nome }}</option>
           }
@@ -35,7 +35,7 @@ import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
         @for (v of lista(); track v.id) {
           <li class="venda" [class.cancelada]="v.status === 'cancelada'">
             <div class="topo">
-              <strong>{{ v.cliente_nome }}</strong>
+              <strong class="clamp-2">{{ v.cliente_nome }}</strong>
               <strong class="num">{{ v.total | brl }}</strong>
             </div>
             <span class="muted small">
@@ -44,11 +44,11 @@ import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
             </span>
             <ul class="itens">
               @for (i of v.venda_itens; track $index) {
-                <li><span class="num">{{ i.quantidade }}×</span> {{ i.variacoes.produtos.codigo }} {{ i.variacoes.produtos.nome }} · {{ i.variacoes.nome }} <span class="muted num">{{ i.preco_unitario | brl }}</span></li>
+                <li><span class="num">{{ i.quantidade }}×</span> <span class="clamp-2">{{ i.variacoes.produtos.codigo }} {{ i.variacoes.produtos.nome }} · {{ i.variacoes.nome }}</span> <span class="muted num">{{ i.preco_unitario | brl }}</span></li>
               }
             </ul>
             @if (v.status === 'cancelada') {
-              <span class="selo perigo">Cancelada: {{ v.motivo_cancelamento }}</span>
+              <p class="nota-cancelada">Cancelada: {{ v.motivo_cancelamento }}</p>
             } @else {
               <button class="btn sec pequeno cancelar" (click)="abrirCancelar(v)">Cancelar venda</button>
             }
@@ -86,12 +86,13 @@ import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
     </dialog>
   `,
   styles: `
-    .filtros { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+    .filtros { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: .5rem; }
     .venda { display: grid; gap: .3rem; padding: .85rem 1rem; }
     .venda.cancelada { opacity: .7; }
-    .topo { display: flex; justify-content: space-between; gap: 1rem; }
-    .itens { margin: .2rem 0 0; padding: 0; list-style: none; font-size: .88rem; }
-    .selo, .cancelar { justify-self: start; }
+    .topo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: start; }
+    .itens { margin: .2rem 0 0; padding: 0; list-style: none; font-size: .88rem; display: grid; gap: .2rem; }
+    .itens li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .4rem; }
+    .cancelar { justify-self: start; margin-top: .25rem; }
     .topo-folha { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
     .form { display: grid; gap: 1rem; margin-top: 1rem; }
   `,

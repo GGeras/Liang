@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { PAGAMENTOS } from '../../core/models';
-import { BrlPipe, Icone, Toast, baixarCsv } from '../../shared/ui';
+import { BrlPipe, Icone, IntPipe, Toast, baixarCsv } from '../../shared/ui';
 import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
 
 interface Resumo {
@@ -57,15 +57,15 @@ function intervalo(p: Periodo): [Date, Date] {
 
 @Component({
   selector: 'app-painel',
-  imports: [BrlPipe, RouterLink, Icone],
+  imports: [BrlPipe, IntPipe, RouterLink, Icone],
   template: `
     <main class="pagina">
       <header class="cabecalho">
         <h1>Painel</h1>
-        <button class="btn sec pequeno" (click)="exportar()" [disabled]="exportando()"><i-con nome="baixar" /> Excel</button>
+        <button class="btn sec pequeno" (click)="exportar()" [disabled]="exportando()"><i-con nome="baixar" /> <span class="rotulo-opcional">Excel</span></button>
       </header>
 
-      <div class="periodos" role="group" aria-label="Período">
+      <div class="rolagem-x" role="group" aria-label="Período">
         @for (p of periodos; track p.id) {
           <button class="chip" [attr.aria-pressed]="periodo() === p.id" (click)="mudar(p.id)">{{ p.nome }}</button>
         }
@@ -79,7 +79,7 @@ function intervalo(p: Periodo): [Date, Date] {
         @if (r.ocorrencias_abertas > 0) {
           <a class="ocorrencia" routerLink="/admin/ocorrencias">
             <i-con nome="alerta" />
-            <span><strong>{{ r.ocorrencias_abertas }} ocorrência(s) para revisar</strong><br /><span class="small">Vendas recusadas por falta de estoque</span></span>
+            <span><strong>{{ r.ocorrencias_abertas }} {{ r.ocorrencias_abertas === 1 ? 'venda recusada' : 'vendas recusadas' }} para revisar</strong><br /><span class="small">Faltou estoque ao sincronizar</span></span>
           </a>
         }
 
@@ -87,8 +87,8 @@ function intervalo(p: Periodo): [Date, Date] {
           <span class="muted small">Faturamento</span>
           <strong class="valor num">{{ r.faturamento | brl }}</strong>
           <div class="mini">
-            <div><span class="num">{{ r.vendas }}</span><span class="muted small">vendas</span></div>
-            <div><span class="num">{{ r.itens }}</span><span class="muted small">itens</span></div>
+            <div><span class="num">{{ r.vendas | int }}</span><span class="muted small">vendas</span></div>
+            <div><span class="num">{{ r.itens | int }}</span><span class="muted small">itens</span></div>
             <div><span class="num">{{ r.ticket_medio | brl }}</span><span class="muted small">ticket médio</span></div>
             <div>
               <span class="num">{{ r.lucro_estimado | brl }}</span>
@@ -96,7 +96,7 @@ function intervalo(p: Periodo): [Date, Date] {
             </div>
           </div>
           @if (r.itens_sem_custo > 0) {
-            <p class="muted small nota">{{ r.itens_sem_custo }} item(ns) vendido(s) sem custo cadastrado ficaram fora do lucro.</p>
+            <p class="muted small nota">{{ r.itens_sem_custo | int }} {{ r.itens_sem_custo === 1 ? 'item vendido sem custo cadastrado ficou' : 'itens vendidos sem custo cadastrado ficaram' }} fora do lucro.</p>
           }
         </section>
 
@@ -120,7 +120,7 @@ function intervalo(p: Periodo): [Date, Date] {
             <h2>Por vendedor</h2>
             @for (v of r.por_vendedor; track v.nome) {
               <div class="linha-barra">
-                <span>{{ v.nome }} <span class="muted small">· {{ v.vendas }}</span></span>
+                <span class="uma-linha">{{ v.nome }} <span class="muted small">· {{ v.vendas | int }}</span></span>
                 <strong class="num">{{ v.total | brl }}</strong>
                 <div class="trilho"><div [style.width.%]="(v.total / r.faturamento) * 100"></div></div>
               </div>
@@ -148,8 +148,8 @@ function intervalo(p: Periodo): [Date, Date] {
             @for (m of r.mais_vendidos; track m.codigo + m.variacao) {
               <li>
                 <span class="etiqueta">{{ m.codigo }}</span>
-                <span class="nome">{{ m.produto }} <span class="muted small">· {{ m.variacao }}</span></span>
-                <span class="num">{{ m.quantidade }} un.</span>
+                <span class="nome"><span class="clamp-2">{{ m.produto }}</span><span class="muted small uma-linha">{{ m.variacao }}</span></span>
+                <span class="num qtd-r">{{ m.quantidade | int }} un.</span>
               </li>
             } @empty {
               <p class="muted small">Sem vendas no período.</p>
@@ -166,7 +166,7 @@ function intervalo(p: Periodo): [Date, Date] {
             @for (e of r.estoque_baixo; track e.codigo + e.variacao) {
               <li>
                 <span class="etiqueta">{{ e.codigo }}</span>
-                <span class="nome">{{ e.produto }} <span class="muted small">· {{ e.variacao }}</span></span>
+                <span class="nome"><span class="clamp-2">{{ e.produto }}</span><span class="muted small uma-linha">{{ e.variacao }}</span></span>
                 <span class="selo" [class.perigo]="e.estoque <= 0" [class.alerta]="e.estoque > 0">{{ e.estoque }} / mín. {{ e.minimo }}</span>
               </li>
             } @empty {
@@ -176,8 +176,8 @@ function intervalo(p: Periodo): [Date, Date] {
         </section>
 
         <section class="painel valores">
-          <div><span class="muted small">Estoque a preço de custo</span><strong class="num">{{ r.valor_estoque.custo | brl }}</strong></div>
-          <div><span class="muted small">Estoque a preço de varejo</span><strong class="num">{{ r.valor_estoque.varejo | brl }}</strong></div>
+          <div><span class="muted small">Estoque no custo</span><strong class="num">{{ r.valor_estoque.custo | brl }}</strong></div>
+          <div><span class="muted small">Estoque no varejo</span><strong class="num">{{ r.valor_estoque.varejo | brl }}</strong></div>
         </section>
       } @else if (!erro()) {
         <p class="vazio">Carregando…</p>
@@ -185,13 +185,10 @@ function intervalo(p: Periodo): [Date, Date] {
     </main>
   `,
   styles: `
-    .periodos { display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: none; }
-    .chip { flex: none; min-height: 36px; padding: 0 .9rem; border-radius: 99px; border: 1.5px solid var(--line); background: var(--surface); font: inherit; font-weight: 650; font-size: .88rem; color: var(--muted); cursor: pointer; }
-    .chip[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: #fff; }
     .ocorrencia { display: flex; gap: .7rem; align-items: center; padding: .85rem 1rem; border-radius: var(--r-md); background: var(--danger-bg); color: var(--danger); text-decoration: none; }
     .destaque { background: var(--ink); color: #fff; border-radius: var(--r-lg); padding: 1.1rem 1rem; display: grid; gap: .2rem; }
     .destaque .muted { color: #b9c2cf; }
-    .valor { font-size: 2.4rem; font-weight: 800; font-stretch: 118%; line-height: 1.1; }
+    .valor { font-size: clamp(1.7rem, 9vw, 2.4rem); font-weight: 800; font-stretch: 118%; line-height: 1.1; }
     .mini { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; margin-top: .9rem; padding-top: .9rem; border-top: 1px solid #2f3b4d; }
     .mini div { display: grid; }
     .mini .num { font-weight: 750; font-size: 1.1rem; }
@@ -211,19 +208,21 @@ function intervalo(p: Periodo): [Date, Date] {
 
     .duas { display: grid; gap: 1rem; }
     @media (min-width: 640px) { .duas { grid-template-columns: 1fr 1fr; } }
-    .linha-barra { display: grid; grid-template-columns: 1fr auto; gap: .25rem .5rem; margin-bottom: .7rem; }
+    .linha-barra { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .25rem .5rem; margin-bottom: .7rem; }
     .trilho { grid-column: 1 / -1; height: 6px; background: var(--paper); border-radius: 3px; overflow: hidden; }
     .trilho div { height: 100%; background: var(--cobalt); border-radius: 3px; }
     .sep { padding-top: .5rem; border-top: 1px solid var(--line); }
 
     .ranking { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
-    .ranking li { display: grid; grid-template-columns: auto 1fr auto; gap: .6rem; align-items: center; }
-    .ranking .nome { min-width: 0; }
+    .ranking li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .6rem; align-items: start; }
+    .ranking .etiqueta { margin-top: .1rem; }
+    .ranking .nome { min-width: 0; display: grid; line-height: 1.3; }
+    .ranking .qtd-r, .ranking .selo { margin-top: .1rem; }
     .titulo-acao { display: flex; justify-content: space-between; align-items: baseline; }
     .titulo-acao a { color: var(--cobalt); font-weight: 650; }
-    .valores { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .valores { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
     .valores div { display: grid; }
-    .valores strong { font-size: 1.2rem; }
+    .valores strong { font-size: 1.15rem; }
   `,
 })
 export class Painel {

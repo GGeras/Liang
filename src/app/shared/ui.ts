@@ -18,6 +18,16 @@ export class BrlPipe implements PipeTransform {
   }
 }
 
+const inteiro = new Intl.NumberFormat('pt-BR');
+
+/** Contagens com separador de milhar: 1.023 vendas. */
+@Pipe({ name: 'int' })
+export class IntPipe implements PipeTransform {
+  transform(v: number | string | null | undefined) {
+    return inteiro.format(Number(v ?? 0));
+  }
+}
+
 @Pipe({ name: 'dataHora' })
 export class DataHoraPipe implements PipeTransform {
   transform(v: string | null | undefined) {

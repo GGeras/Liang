@@ -33,13 +33,13 @@ export const NOME_MOV: Record<string, string> = {
         <div class="acoes-topo">
           <button class="btn-icone" (click)="scanner.abrir()" aria-label="Buscar por código de barras"><i-con nome="scan" /></button>
           <button class="btn-icone" (click)="exportar()" aria-label="Exportar estoque"><i-con nome="baixar" /></button>
-          <a class="btn pequeno" routerLink="/admin/produtos/novo"><i-con nome="mais1" /> Produto</a>
+          <a class="btn pequeno" routerLink="/admin/produtos/novo"><i-con nome="mais1" /> <span class="rotulo-opcional">Produto</span></a>
         </div>
       </header>
 
       <input class="input" type="search" placeholder="Buscar código, nome ou modelo" [ngModel]="termo()" (ngModelChange)="termo.set($event)" aria-label="Buscar" />
 
-      <div class="filtros" role="group" aria-label="Filtro">
+      <div class="rolagem-x" role="group" aria-label="Filtro">
         <button class="chip" [attr.aria-pressed]="!soBaixo()" (click)="soBaixo.set(false)">Todos · {{ catalogo.itens().length }}</button>
         <button class="chip" [attr.aria-pressed]="soBaixo()" (click)="soBaixo.set(true)">Abaixo do mínimo · {{ baixos() }}</button>
       </div>
@@ -49,7 +49,7 @@ export const NOME_MOV: Record<string, string> = {
           <li>
             <button class="linha" (click)="abrir(i)">
               <span class="etiqueta">{{ i.codigo }}</span>
-              <span class="nome"><strong>{{ i.nome }}</strong><span class="muted small">{{ i.variacao }}</span></span>
+              <span class="nome"><strong class="clamp-2">{{ i.nome }}</strong><span class="muted small uma-linha">{{ i.variacao }}</span></span>
               <span class="qtd num" [class.baixo]="i.estoque <= i.estoque_minimo" [class.zero]="i.estoque <= 0">{{ i.estoque }}</span>
             </button>
           </li>
@@ -64,7 +64,7 @@ export const NOME_MOV: Record<string, string> = {
         <div class="topo">
           <div>
             <span class="etiqueta">{{ i.codigo }}</span>
-            <h2>{{ i.nome }}</h2>
+            <h2 class="clamp-2">{{ i.nome }}</h2>
             <p class="muted">{{ i.variacao }} · mínimo {{ i.estoque_minimo }}</p>
           </div>
           <button class="btn-icone" (click)="dlg.close()" aria-label="Fechar"><i-con nome="fechar" /></button>
@@ -84,7 +84,7 @@ export const NOME_MOV: Record<string, string> = {
               <label class="campo"><span>Quantidade que chegou</span><input type="number" min="1" inputmode="numeric" [ngModel]="qtd()" (ngModelChange)="qtd.set($event)" /></label>
               <label class="campo"><span>Custo por unidade (opcional)</span><input type="number" min="0" step="0.01" inputmode="decimal" [ngModel]="custo()" (ngModelChange)="custo.set($event)" /></label>
               <label class="campo"><span>Observação (opcional)</span><input [ngModel]="obs()" (ngModelChange)="obs.set($event)" /></label>
-              <button class="btn ok bloco" [disabled]="!(qtd() > 0) || salvando()" (click)="entrada()">Registrar entrada de {{ qtd() || 0 }}</button>
+              <button class="btn ok bloco" [disabled]="!(qtd() > 0) || salvando()" (click)="entrada()">Registrar entrada ({{ qtd() || 0 }})</button>
             </div>
           }
           @case ('ajuste') {
@@ -92,7 +92,7 @@ export const NOME_MOV: Record<string, string> = {
               <p class="muted small">Use para corrigir contagem, perda ou defeito. Fica registrado no histórico com o motivo.</p>
               <label class="campo"><span>Quantidade correta</span><input type="number" min="0" inputmode="numeric" [ngModel]="qtd()" (ngModelChange)="qtd.set($event)" /></label>
               <label class="campo"><span>Motivo</span><input [ngModel]="obs()" (ngModelChange)="obs.set($event)" placeholder="Ex.: contagem de inventário" /></label>
-              <button class="btn bloco" [disabled]="qtd() === null || qtd() < 0 || !obs().trim() || salvando()" (click)="ajuste()">Ajustar para {{ qtd() }}</button>
+              <button class="btn bloco" [disabled]="qtd() === null || qtd() < 0 || !obs().trim() || salvando()" (click)="ajuste()">Ajustar estoque para {{ qtd() }}</button>
             </div>
           }
           @case ('historico') {
@@ -118,21 +118,19 @@ export const NOME_MOV: Record<string, string> = {
   `,
   styles: `
     .acoes-topo { display: flex; align-items: center; gap: .25rem; }
-    .filtros { display: flex; gap: .4rem; }
-    .chip { min-height: 36px; padding: 0 .9rem; border-radius: 99px; border: 1.5px solid var(--line); background: var(--surface); font: inherit; font-weight: 650; font-size: .88rem; color: var(--muted); cursor: pointer; }
-    .chip[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: #fff; }
-    .linha { width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: .75rem; align-items: center; padding: .8rem 1rem; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+    .linha { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .75rem; align-items: start; padding: .8rem 1rem; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
     .nome { display: grid; min-width: 0; }
-    .qtd { font-size: 1.3rem; font-weight: 800; font-stretch: 112%; min-width: 2.5rem; text-align: right; }
+    .linha .etiqueta { margin-top: .1rem; }
+    .qtd { font-size: 1.3rem; line-height: 1.2; font-weight: 800; font-stretch: 112%; min-width: 2.5rem; text-align: right; }
     .qtd.baixo { color: var(--warn); }
     .qtd.zero { color: var(--danger); }
-    .topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+    .topo { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 1rem; }
     .topo h2 { margin-top: .4rem; }
     .saldo { margin: 1rem 0; font-weight: 650; }
     .saldo .num { font-size: 2.2rem; font-weight: 800; font-stretch: 118%; margin-right: .3rem; }
     .form { display: grid; gap: .9rem; margin-top: 1rem; }
     .movs { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .7rem; max-height: 40vh; overflow-y: auto; }
-    .movs li { display: grid; grid-template-columns: 3rem 1fr auto; gap: .5rem; align-items: start; }
+    .movs li { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) auto; gap: .5rem; align-items: start; }
     .movs .num { font-weight: 800; }
     .pos { color: var(--ok); }
     .neg { color: var(--danger); }

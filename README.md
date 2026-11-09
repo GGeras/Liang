@@ -19,6 +19,15 @@ PWA mobile para controle de estoque de peças de celular (telas, tampas, conecto
 | Compatibilidade "a confirmar" não aparece para o vendedor | policy `compat_select` |
 | Venda offline: fila criptografada (AES-GCM, chave não exportável) no aparelho; ao conectar, quem chega primeiro leva o estoque; a recusada vira **ocorrência** para o admin | `src/app/core/cofre.ts`, `vendas.service.ts` |
 | Cancelamento só admin, com motivo e opção de devolver estoque | `cancelar_venda` |
+| Toda alteração de catálogo (preço, nome, compatibilidade, tipo) fica registrada com autor, antes e depois | `alteracoes_catalogo` + triggers |
+| Venda offline usa o preço vigente na hora da venda, mesmo que o preço mude antes de sincronizar (até 7 dias) | `preco_em()` em `registrar_venda` |
+| Entrada com custo atualiza o custo da variação (lucro estimado do painel) | `registrar_entrada` |
+
+## Layout mobile
+Testado em 320, 360 e 412 px com nomes longos, sem rolagem horizontal. Convenções em `src/styles.scss`:
+- `.clamp-2` nomes de produto em até 2 linhas; `.uma-linha` para metadados com reticências
+- `.num` valores e códigos nunca quebram; `.rolagem-x` para filtros em chips
+- Botões com `.rotulo-opcional` viram só ícone abaixo de 360 px
 
 ## Estrutura
 ```
