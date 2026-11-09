@@ -1,0 +1,43 @@
+# Liang · Estoque Mundo Mix
+
+PWA mobile de controle de estoque de peças de celular (telas, tampas, conectores, baterias) da Mundo Mix, loja única. Usado no balcão, no celular, por vendedores e administradores. Interface e textos em português do Brasil.
+
+## Stack e ambientes
+- Angular 20: standalone, signals, zoneless, `@if/@for`, componentes com template e estilos inline em `src/app/features/**`.
+- Supabase, projeto **Liang**, ref `irfgrdaoblycskbngqnh`, região `sa-east-1`. A chave publicável está em `src/environments/environment.ts` e pode ficar no front: quem garante a segurança é a RLS.
+- Hospedagem no Cloudflare Pages (build `npm run build`, saída `dist/liang/browser`). `public/_redirects` e `public/_headers` já estão prontos.
+- Banco: migrations em `supabase/migrations/` (numeradas, nunca editar uma já aplicada; criar uma nova). Edge function `usuarios` em `supabase/functions/usuarios`.
+
+## Regras de negócio (definidas com o dono; não mudar sem perguntar)
+1. **Código `00-00`:** os 2 primeiros dígitos são o tipo e os 2 últimos o produto dentro do tipo. O admin define o código. Um tipo pode precisar de um segundo número quando passar de 100 produtos.
+2. **Variação:** cor ou qualidade (Incell, OLED, JK…) é variação do mesmo código. Cada variação tem preço de atacado, preço de varejo, custo opcional, código de barras opcional, estoque mínimo e estoque próprio.
+3. **Compatibilidades:** só o admin cadastra. O status é `confirmada` ou `a_confirmar`, e o vendedor vê só as confirmadas. Sugestões automáticas sempre entram como `a_confirmar`.
+4. **Venda:** sempre é venda (não há troca nem uso interno).
+   - Pode ter vários itens e um único tipo de preço (atacado ou varejo). O vendedor não altera preço.
+   - Guarda o nome do cliente (sem cadastro), o vendedor, a forma de pagamento, a data e a hora.
+   - Cartão só é aceito no varejo. Atacado aceita só dinheiro ou Pix.
+   - O vendedor confirma a venda antes de enviar.
+5. **Leitura de produto:** pelo código 00-00 ou pelo código de barras. Só é possível vender produto cadastrado e com estoque suficiente para a quantidade.
+6. **Offline:** a venda fica numa fila criptografada no aparelho (AES-GCM, chave não exportável; ver `core/cofre.ts`). Ao reconectar, o servidor decide: quem chega primeiro leva o estoque. A venda recusada vira **ocorrência** para o admin, e o vendedor é avisado. A venda offline usa o preço vigente na hora da venda (`preco_em`).
+7. **Cancelamento:** só o admin cancela, com motivo, e escolhe se o estoque volta.
+8. **Entrada:** registra quem, quando e quantos; o custo é opcional e, quando informado, atualiza o custo da variação.
+9. **Ajuste de inventário:** só o admin, com motivo obrigatório.
+10. **Referência absoluta:** o sistema é a fonte da verdade. O histórico é imutável: `movimentos`, `venda_itens` e `alteracoes_catalogo` bloqueiam UPDATE e DELETE. O estoque só muda pelas funções `registrar_venda`, `registrar_entrada`, `ajustar_estoque` e `cancelar_venda`, que validam o perfil por dentro (os avisos do linter sobre SECURITY DEFINER nelas são esperados).
+11. **Perfis:** admin (pode haver vários) e vendedor. O vendedor vê o estoque e o próprio histórico. O admin tem painel, estoque, produtos, vendas, movimentações, ocorrências e usuários.
+12. **Usuários:** só o admin cria usuários, pela edge function `usuarios`. São no máximo 2 a 3 vendedores ao mesmo tempo.
+
+## Convenções de interface
+- Público: equipe da loja, uso rápido de pé no balcão, com uma mão. Meta de acessibilidade WCAG 2.2 **AA**. Preços e códigos precisam ser legíveis de relance.
+- Tokens de cor e tipo em `src/styles.scss`: papel `#EEF1F4`, tinta `#172130`, cobalto `#2340C8`, etiqueta amarela `#FFD447`, fonte Archivo com eixo de largura. A **etiqueta amarela com o código** é o elemento de identidade; não diluir.
+- Classes de texto:
+  - `.clamp-2`: nome de produto em até 2 linhas.
+  - `.uma-linha`: metadado de uma linha, com reticências.
+  - `.num`: valores e códigos, que nunca quebram.
+  - `.rolagem-x`: linha de chips de filtro.
+  - `.rotulo-opcional`: texto de botão que some abaixo de 360px.
+- Grids com coluna flexível usam `minmax(0, 1fr)` para não estourar com nomes longos.
+- Toda tela deve funcionar em 320, 360 e 412px sem rolagem horizontal.
+- **Verificação:** `npm run auditoria` (requer `npx playwright install chromium` uma vez). Gera capturas em `.auditoria/` com dados fictícios e nomes longos, e lista elementos que estouram a tela. Olhar as capturas, não só a saída.
+
+## Commits
+Mensagens em português, descrevendo o que mudou para o usuário.
