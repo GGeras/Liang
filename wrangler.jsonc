@@ -11,5 +11,7 @@
     // Rotas do app (/entrar, /admin/painel…) devolvem o index.html; o Angular resolve a rota
     "not_found_handling": "single-page-application"
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Branches fora do main viram link de prévia (`npx wrangler preview`); o bloco pode ficar vazio
+  "previews": {}
 }
