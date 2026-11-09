@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { PAGAMENTOS } from '../../core/models';
-import { BrlPipe, Icone, IntPipe, Toast, baixarCsv } from '../../shared/ui';
+import { BrlPipe, Ident, Icone, IntPipe, Toast, baixarCsv } from '../../shared/ui';
 import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
 
 interface Resumo {
@@ -16,8 +16,8 @@ interface Resumo {
   por_vendedor: { nome: string; total: number; vendas: number }[];
   por_pagamento: Partial<Record<keyof typeof PAGAMENTOS, number>>;
   por_tipo_preco: { atacado?: number; varejo?: number };
-  mais_vendidos: { codigo: string; produto: string; variacao: string; quantidade: number; total: number }[];
-  estoque_baixo: { codigo: string; produto: string; variacao: string; estoque: number; minimo: number }[];
+  mais_vendidos: { codigo: string | null; codigo_barras?: string | null; produto: string; variacao: string; quantidade: number; total: number }[];
+  estoque_baixo: { codigo: string | null; codigo_barras?: string | null; produto: string; variacao: string; estoque: number; minimo: number }[];
   valor_estoque: { custo: number; varejo: number };
   ocorrencias_abertas: number;
 }
@@ -57,7 +57,7 @@ function intervalo(p: Periodo): [Date, Date] {
 
 @Component({
   selector: 'app-painel',
-  imports: [BrlPipe, IntPipe, RouterLink, Icone],
+  imports: [BrlPipe, Ident, IntPipe, RouterLink, Icone],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -145,9 +145,9 @@ function intervalo(p: Periodo): [Date, Date] {
         <section class="painel">
           <h2>Mais vendidos</h2>
           <ol class="ranking">
-            @for (m of r.mais_vendidos; track m.codigo + m.variacao) {
+            @for (m of r.mais_vendidos; track (m.codigo ?? m.codigo_barras) + m.variacao + m.produto) {
               <li>
-                <span class="etiqueta">{{ m.codigo }}</span>
+                <app-ident [codigo]="m.codigo" [barras]="m.codigo_barras" />
                 <span class="nome"><span class="clamp-2">{{ m.produto }}</span><span class="muted small uma-linha">{{ m.variacao }}</span></span>
                 <span class="num qtd-r">{{ m.quantidade | int }} un.</span>
               </li>
@@ -163,9 +163,9 @@ function intervalo(p: Periodo): [Date, Date] {
             <a routerLink="/admin/estoque" class="small">Ver estoque</a>
           </div>
           <ul class="ranking">
-            @for (e of r.estoque_baixo; track e.codigo + e.variacao) {
+            @for (e of r.estoque_baixo; track (e.codigo ?? e.codigo_barras) + e.variacao + e.produto) {
               <li>
-                <span class="etiqueta">{{ e.codigo }}</span>
+                <app-ident [codigo]="e.codigo" [barras]="e.codigo_barras" />
                 <span class="nome"><span class="clamp-2">{{ e.produto }}</span><span class="muted small uma-linha">{{ e.variacao }}</span></span>
                 <span class="selo" [class.perigo]="e.estoque <= 0" [class.alerta]="e.estoque > 0">{{ e.estoque }} / mín. {{ e.minimo }}</span>
               </li>
@@ -217,7 +217,7 @@ function intervalo(p: Periodo): [Date, Date] {
 
     .ranking { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
     .ranking li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .6rem; align-items: start; }
-    .ranking .etiqueta { margin-top: .1rem; }
+    .ranking app-ident { margin-top: .1rem; }
     .ranking .nome { min-width: 0; display: grid; line-height: 1.3; }
     .ranking .qtd-r, .ranking .selo { margin-top: .1rem; }
     .titulo-acao { display: flex; justify-content: space-between; align-items: baseline; }
@@ -298,7 +298,7 @@ export class Painel {
             v.cliente_nome,
             v.tipo_preco === 'atacado' ? 'Atacado' : 'Varejo',
             PAGAMENTOS[v.forma_pagamento],
-            i.variacoes.produtos.codigo,
+            i.variacoes.produtos.codigo ?? i.variacoes.codigo_barras ?? '',
             i.variacoes.produtos.nome,
             i.variacoes.nome,
             i.quantidade,

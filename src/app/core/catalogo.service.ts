@@ -34,6 +34,7 @@ export class CatalogoService {
   readonly porCodigo = computed(() => {
     const m = new Map<string, ItemCatalogo[]>();
     for (const i of this.itens()) {
+      if (!i.codigo) continue; // produto com código de barras não tem 00-00
       const l = m.get(i.codigo) ?? [];
       l.push(i);
       m.set(i.codigo, l);
@@ -109,7 +110,7 @@ export class CatalogoService {
     const cod = normalizarCodigo(termo);
     return this.itens().filter((i) => {
       if (cod && i.codigo === cod) return true;
-      const alvo = [i.codigo, i.nome, i.marca, i.modelo, i.variacao, i.tipo, ...i.compativeis]
+      const alvo = [i.codigo, i.codigo_barras, i.nome, i.marca, i.modelo, i.variacao, i.tipo, ...i.compativeis]
         .join(' ')
         .toLowerCase()
         .normalize('NFD')

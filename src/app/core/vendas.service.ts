@@ -14,7 +14,7 @@ interface RespostaRpc {
   ok: boolean;
   erro?: string;
   total?: number;
-  faltando?: { codigo?: string; produto?: string; variacao?: string; pedido?: number; disponivel?: number; erro?: string }[];
+  faltando?: { codigo?: string | null; codigo_barras?: string | null; produto?: string; variacao?: string; pedido?: number; disponivel?: number; erro?: string }[];
 }
 
 function erroDeRede(e: unknown) {
@@ -26,7 +26,7 @@ export function motivoRecusa(r: RespostaRpc): string {
   switch (r.erro) {
     case 'sem_estoque': {
       const itens = (r.faltando ?? [])
-        .map((f) => (f.erro === 'item_inexistente' ? 'item removido do catálogo' : `${f.codigo} ${f.variacao}: pediu ${f.pedido}, havia ${f.disponivel}`))
+        .map((f) => (f.erro === 'item_inexistente' ? 'item removido do catálogo' : `${f.codigo ?? f.codigo_barras ?? ''} ${f.variacao}: pediu ${f.pedido}, havia ${f.disponivel}`))
         .join('; ');
       return `Estoque insuficiente (${itens}).`;
     }
@@ -95,7 +95,7 @@ export class VendasService {
       itens: carrinho.map((c) => ({
         variacao_id: c.item.variacao_id,
         quantidade: c.quantidade,
-        codigo: c.item.codigo,
+        codigo: c.item.codigo ?? c.item.codigo_barras,
         nome: `${c.item.nome} · ${c.item.variacao}`,
       })),
       total_previsto: carrinho.reduce((s, c) => s + precoDe(c.item, tipo) * c.quantidade, 0),

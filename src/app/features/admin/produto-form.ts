@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { CatalogoService } from '../../core/catalogo.service';
 import { AuthService } from '../../core/auth.service';
-import { DataHoraPipe, Icone, Toast, formatarBRL } from '../../shared/ui';
+import { DataHoraPipe, Ident, Icone, Toast, formatarBRL, identTexto } from '../../shared/ui';
 import { Scanner } from '../../shared/scanner';
 import { Tipo } from './produtos';
 
@@ -47,13 +47,13 @@ interface Compat {
 
 @Component({
   selector: 'app-produto-form',
-  imports: [FormsModule, RouterLink, Icone, DataHoraPipe, Scanner],
+  imports: [FormsModule, RouterLink, Ident, Icone, DataHoraPipe, Scanner],
   template: `
     <main class="pagina">
       <header class="cabecalho">
         <a class="btn-icone" routerLink="/admin/produtos" aria-label="Voltar"><i-con nome="voltar" /></a>
         <h1 class="titulo">{{ novo() ? 'Novo produto' : 'Editar produto' }}</h1>
-        <span class="etiqueta">{{ codigo() }}</span>
+        <app-ident [codigo]="modo() === 'codigo' ? codigo() : null" [barras]="modo() === 'barras' ? variacoes()[0]?.codigo_barras : null" />
       </header>
 
       @if (erro()) {
@@ -61,9 +61,29 @@ interface Compat {
       }
 
       <section class="painel form">
-        <h2>Código</h2>
+        <h2>Identificação</h2>
+        <!-- É um ou outro: produto com código de barras não usa 00-00 -->
+        <div class="segmento" role="group" aria-label="Como o produto é identificado">
+          <button type="button" [attr.aria-pressed]="modo() === 'barras'" (click)="mudarModo('barras')">Código de barras</button>
+          <button type="button" [attr.aria-pressed]="modo() === 'codigo'" (click)="mudarModo('codigo')">Sem código (00-00)</button>
+        </div>
+        <p class="muted small">
+          {{ modo() === 'barras'
+            ? 'Leia o código de barras do produto e complete o resto. Se houver mais de uma variação (cor, qualidade), cada uma tem o seu código.'
+            : 'Para peça sem código de barras: o sistema identifica pelo código 00-00 (tipo + número).' }}
+        </p>
+        @if (modo() === 'barras' && variacoes()[0]; as v0) {
+          <!-- Código de barras da 1ª variação, no topo: ler e terminar de preencher -->
+          <div class="campo">
+            <span id="cb-principal">Código de barras{{ variacoes().length > 1 ? ' · ' + (v0.nome || '1ª variação') : '' }}</span>
+            <div class="cb-linha">
+              <input inputmode="numeric" autocomplete="off" aria-labelledby="cb-principal" [(ngModel)]="v0.codigo_barras" placeholder="Leia ou digite" />
+              <button type="button" class="btn sec cb-camera" (click)="lerCodigoPara(v0)" aria-label="Ler código de barras com a câmera"><i-con nome="scan" /></button>
+            </div>
+          </div>
+        }
         <div class="grade2">
-          <label class="campo">
+          <label class="campo" [class.span2]="modo() === 'barras'">
             <span>Tipo</span>
             <select [ngModel]="tipoId()" (ngModelChange)="mudarTipo($event)">
               <option [ngValue]="null" disabled>Escolha</option>
@@ -72,10 +92,12 @@ interface Compat {
               }
             </select>
           </label>
-          <label class="campo">
-            <span>Número no tipo</span>
-            <input type="number" min="0" max="99" inputmode="numeric" [ngModel]="seq()" (ngModelChange)="seq.set($event)" />
-          </label>
+          @if (modo() === 'codigo') {
+            <label class="campo">
+              <span>Número no tipo</span>
+              <input type="number" min="0" max="99" inputmode="numeric" [ngModel]="seq()" (ngModelChange)="seq.set($event)" />
+            </label>
+          }
         </div>
         @if (!tipos().length) {
           <p class="muted small">Cadastre os tipos primeiro em Produtos › Tipos.</p>
@@ -114,18 +136,21 @@ interface Compat {
         @for (v of variacoes(); track v.id; let idx = $index) {
           <fieldset class="variacao" [class.inativa]="!v.ativo">
             <div class="grade2">
+              @if (modo() === 'barras' && idx > 0) {
+                <!-- Produto com código de barras: o código é a identificação de cada variação -->
+                <div class="campo span2">
+                  <span [id]="'cb-rotulo-' + v.id">Código de barras</span>
+                  <div class="cb-linha">
+                    <input inputmode="numeric" autocomplete="off" [attr.aria-labelledby]="'cb-rotulo-' + v.id" [(ngModel)]="v.codigo_barras" placeholder="Leia ou digite" />
+                    <button type="button" class="btn sec cb-camera" (click)="lerCodigoPara(v)" [attr.aria-label]="'Ler código de barras da variação ' + (v.nome || 'nova') + ' com a câmera'"><i-con nome="scan" /></button>
+                  </div>
+                </div>
+              }
               <label class="campo span2"><span>Nome da variação</span><input [(ngModel)]="v.nome" /></label>
               <label class="campo"><span>Preço atacado</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.preco_atacado" /></label>
               <label class="campo"><span>Preço varejo</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.preco_varejo" /></label>
               <label class="campo"><span>Custo (opcional)</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.custo" /></label>
               <label class="campo"><span>Estoque mínimo</span><input type="number" min="0" inputmode="numeric" [(ngModel)]="v.estoque_minimo" /></label>
-              <div class="campo span2">
-                <span [id]="'cb-rotulo-' + v.id">Código de barras (opcional)</span>
-                <div class="cb-linha">
-                  <input inputmode="numeric" autocomplete="off" [attr.aria-labelledby]="'cb-rotulo-' + v.id" [(ngModel)]="v.codigo_barras" />
-                  <button type="button" class="btn sec cb-camera" (click)="lerCodigoPara(v)" [attr.aria-label]="'Ler código de barras da variação ' + (v.nome || 'nova') + ' com a câmera'"><i-con nome="scan" /></button>
-                </div>
-              </div>
             </div>
             <div class="rodape-var">
               <label class="ativo"><input type="checkbox" [(ngModel)]="v.ativo" /> Ativa</label>
@@ -179,7 +204,11 @@ interface Compat {
 
       <button class="btn bloco salvar" (click)="salvar()" [disabled]="salvando() || !valido()">{{ salvando() ? 'Salvando…' : 'Salvar produto' }}</button>
       @if (!valido()) {
-        <p class="muted small centro">Preencha tipo, número, nome e os preços de cada variação.</p>
+        <p class="muted small centro">
+          {{ modo() === 'barras'
+            ? 'Preencha tipo, nome, o código de barras e os preços de cada variação.'
+            : 'Preencha tipo, número, nome e os preços de cada variação.' }}
+        </p>
       }
     </main>
 
@@ -200,6 +229,8 @@ interface Compat {
     .variacao.inativa { border-style: dashed; background: var(--paper); }
     .rodape-var { display: flex; justify-content: space-between; align-items: center; }
     .cb-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
+    /* "Código de barras | Sem código (00-00)" quebra linha em 320px em vez de estourar */
+    .form .segmento button { white-space: normal; line-height: 1.2; padding-block: .4rem; min-width: 0; }
     .cb-camera { width: 48px; padding: 0; }
     .compat { list-style: none; padding: 0; margin: 0; display: grid; gap: .8rem; }
     .compat-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; align-items: center; }
@@ -244,6 +275,9 @@ export class ProdutoForm {
   protected erro = signal('');
   protected historico = signal<Alteracao[]>([]);
 
+  /** Novo produto começa por código de barras (a maioria das peças tem). */
+  protected modo = signal<'barras' | 'codigo'>('barras');
+
   protected codigo = computed(() =>
     this.tipoId() === null ? '00-00' : `${this.pad(this.tipoId()!)}-${this.seq() === null ? '__' : this.pad(Number(this.seq()))}`,
   );
@@ -260,11 +294,21 @@ export class ProdutoForm {
     return { id: crypto.randomUUID(), nome, preco_atacado: null, preco_varejo: null, custo: null, codigo_barras: null, estoque_minimo: 0, ativo: true, nova: true };
   }
 
+  /** Ou o produto tem código de barras (em cada variação), ou tem 00-00. Nunca os dois. */
+  protected mudarModo(m: 'barras' | 'codigo') {
+    this.modo.set(m);
+    if (m === 'codigo' && this.novo() && this.seq() === null && this.tipoId() !== null) this.mudarTipo(this.tipoId()!);
+  }
+
   protected valido() {
     const s = Number(this.seq());
+    const identificado =
+      this.modo() === 'codigo'
+        ? this.seq() !== null && (this.seq() as unknown) !== '' && s >= 0 && s <= 99
+        : this.variacoes().every((v) => !!v.codigo_barras?.toString().trim());
     return (
       this.tipoId() !== null &&
-      this.seq() !== null && (this.seq() as unknown) !== '' && s >= 0 && s <= 99 &&
+      identificado &&
       !!this.nome().trim() &&
       this.variacoes().length > 0 &&
       this.variacoes().every((v) => v.nome.trim() && v.preco_atacado !== null && v.preco_varejo !== null && (v.preco_atacado as unknown) !== '' && (v.preco_varejo as unknown) !== '')
@@ -297,6 +341,7 @@ export class ProdutoForm {
     this.produtoId.set(data.id);
     this.tipoId.set(data.tipo_id);
     this.seq.set(data.seq);
+    this.modo.set(data.seq === null ? 'barras' : 'codigo');
     this.nome.set(data.nome);
     this.marca.set(data.marca ?? '');
     this.modelo.set(data.modelo ?? '');
@@ -362,7 +407,7 @@ export class ProdutoForm {
     const c = codigo.trim();
     const noCatalogo = this.catalogo.buscarBarras(c);
     if (noCatalogo && noCatalogo.variacao_id !== v.id) {
-      this.toast.mostrar(`Esse código já está em ${noCatalogo.codigo} ${noCatalogo.nome} · ${noCatalogo.variacao}.`, 'erro', 6000);
+      this.toast.mostrar(`Esse código já está em ${identTexto(noCatalogo.codigo, null) || 'outro produto:'} ${noCatalogo.nome} · ${noCatalogo.variacao}.`, 'erro', 6000);
       return false;
     }
     const nesteProduto = this.variacoes().find((x) => x !== v && x.codigo_barras?.toString().trim() === c);
@@ -431,7 +476,8 @@ export class ProdutoForm {
         p_produto: {
           id: this.produtoId(),
           tipo_id: this.tipoId(),
-          seq: Number(this.seq()),
+          // É um ou outro: com código de barras não há número 00-00
+          seq: this.modo() === 'codigo' ? Number(this.seq()) : null,
           nome: this.nome().trim(),
           marca: vazio(this.marca()),
           modelo: vazio(this.modelo()),
@@ -445,7 +491,7 @@ export class ProdutoForm {
           preco_atacado: num(x.preco_atacado),
           preco_varejo: num(x.preco_varejo),
           custo: num(x.custo),
-          codigo_barras: x.codigo_barras?.toString().trim() || null,
+          codigo_barras: this.modo() === 'barras' ? x.codigo_barras?.toString().trim() || null : null,
           estoque_minimo: num(x.estoque_minimo) ?? 0,
           ativo: x.ativo,
         })),
@@ -460,7 +506,7 @@ export class ProdutoForm {
       if (error) throw error;
       this.compatRemovidas = [];
 
-      this.toast.mostrar(`Produto ${this.codigo()} salvo`, 'ok');
+      this.toast.mostrar(`Produto ${this.modo() === 'codigo' ? this.codigo() : this.nome().trim()} salvo`, 'ok');
       await this.catalogo.atualizar();
       this.router.navigateByUrl('/admin/produtos');
     } catch (e) {

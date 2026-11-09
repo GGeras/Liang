@@ -10,7 +10,8 @@ PWA mobile para controle de estoque de peças de celular (telas, tampas, conecto
 ## Regras principais
 | Regra | Onde é garantida |
 |---|---|
-| Código `00-00` (tipo-produto), gerado de `tipo_id` + `seq` | coluna gerada em `produtos` |
+| Identificação: código de barras **ou** `00-00` (só para peça sem código de barras), nunca os dois | `checar_identificacao` (constraint trigger) |
+| `00-00` (tipo-produto), gerado de `tipo_id` + `seq` | coluna gerada em `produtos` (nula em produto com código de barras) |
 | Variação (cor/qualidade) tem preço atacado/varejo e estoque próprios | `variacoes` + `estoque` |
 | Histórico imutável (entrada, venda, ajuste, cancelamento) | `movimentos` com trigger que bloqueia UPDATE/DELETE |
 | Estoque só muda por função (`registrar_venda`, `registrar_entrada`, `ajustar_estoque`, `cancelar_venda`) | RLS sem escrita direta |

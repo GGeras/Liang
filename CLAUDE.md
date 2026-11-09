@@ -9,15 +9,15 @@ PWA mobile de controle de estoque de peças de celular (telas, tampas, conectore
 - Banco: migrations em `supabase/migrations/` (numeradas, nunca editar uma já aplicada; criar uma nova). Edge function `usuarios` em `supabase/functions/usuarios`.
 
 ## Regras de negócio (definidas com o dono; não mudar sem perguntar)
-1. **Código `00-00`:** os 2 primeiros dígitos são o tipo e os 2 últimos o produto dentro do tipo. O admin define o código. Um tipo pode precisar de um segundo número quando passar de 100 produtos.
-2. **Variação:** cor ou qualidade (Incell, OLED, JK…) é variação do mesmo código. Cada variação tem preço de atacado, preço de varejo, custo opcional, código de barras opcional, estoque mínimo e estoque próprio.
+1. **Identificação: código de barras OU `00-00`, nunca os dois** (decisão do dono, 09/11/2026). A maioria das peças tem código de barras: cadastra-se lendo o código e completando o resto, sem `00-00`. O `00-00` existe só para peças **sem** código de barras: os 2 primeiros dígitos são o tipo e os 2 últimos o produto dentro do tipo; o admin define o número (o app sugere o próximo livre). Um tipo pode precisar de um segundo número quando passar de 100 produtos `00-00`. O tipo (categoria) é obrigatório nos dois casos. O banco garante a regra (`checar_identificacao`, no fim da transação).
+2. **Variação:** cor ou qualidade (Incell, OLED, JK…) é variação do mesmo produto. Cada variação tem preço de atacado, preço de varejo, custo opcional, estoque mínimo e estoque próprio. Em produto com código de barras, **cada variação tem o seu código** (obrigatório); em produto `00-00`, nenhuma variação tem código de barras.
 3. **Compatibilidades:** só o admin cadastra. O status é `confirmada` ou `a_confirmar`, e o vendedor vê só as confirmadas. Sugestões automáticas sempre entram como `a_confirmar`.
 4. **Venda:** sempre é venda (não há troca nem uso interno).
    - Pode ter vários itens e um único tipo de preço (atacado ou varejo). O vendedor não altera preço.
    - Guarda o nome do cliente (sem cadastro), o vendedor, a forma de pagamento, a data e a hora.
    - Cartão só é aceito no varejo. Atacado aceita só dinheiro ou Pix.
    - O vendedor confirma a venda antes de enviar.
-5. **Leitura de produto:** pelo código 00-00 ou pelo código de barras. Só é possível vender produto cadastrado e com estoque suficiente para a quantidade.
+5. **Leitura de produto:** pelo código de barras (câmera ou leitor USB/Bluetooth) ou, para peça sem código de barras, pelo `00-00`. Só é possível vender produto cadastrado e com estoque suficiente para a quantidade.
 6. **Offline:** a venda fica numa fila criptografada no aparelho (AES-GCM, chave não exportável; ver `core/cofre.ts`). Ao reconectar, o servidor decide: quem chega primeiro leva o estoque. A venda recusada vira **ocorrência** para o admin, e o vendedor é avisado. A venda offline usa o preço vigente na hora da venda (`preco_em`), no máximo 24 h para trás.
 7. **Cancelamento:** só o admin cancela, com motivo, e escolhe se o estoque volta.
 8. **Entrada:** registra quem, quando e quantos; o custo é opcional e, quando informado, atualiza o custo da variação.
@@ -28,7 +28,7 @@ PWA mobile de controle de estoque de peças de celular (telas, tampas, conectore
 
 ## Convenções de interface
 - Público: equipe da loja, uso rápido de pé no balcão, com uma mão. Meta de acessibilidade WCAG 2.2 **AA**. Preços e códigos precisam ser legíveis de relance.
-- Tokens de cor e tipo em `src/styles.scss`: papel `#EEF1F4`, tinta `#172130`, cobalto `#2340C8`, etiqueta amarela `#FFD447`, fonte Archivo com eixo de largura. A **etiqueta amarela com o código** é o elemento de identidade; não diluir.
+- Tokens de cor e tipo em `src/styles.scss`: papel `#EEF1F4`, tinta `#172130`, cobalto `#2340C8`, etiqueta amarela `#FFD447`, fonte Archivo com eixo de largura. A **etiqueta amarela com o código `00-00`** é o elemento de identidade; não diluir: produto com código de barras mostra o código num selo neutro (`app-ident` / `.barras-id`), nunca na etiqueta amarela.
 - Classes de texto:
   - `.clamp-2`: nome de produto em até 2 linhas.
   - `.uma-linha`: metadado de uma linha, com reticências.

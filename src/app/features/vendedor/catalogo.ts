@@ -4,11 +4,11 @@ import { RouterLink } from '@angular/router';
 import { CatalogoService } from '../../core/catalogo.service';
 import { AuthService } from '../../core/auth.service';
 import { ItemCatalogo } from '../../core/models';
-import { BrlPipe, DataHoraPipe, Icone } from '../../shared/ui';
+import { BrlPipe, DataHoraPipe, Ident, Icone } from '../../shared/ui';
 
 interface Grupo {
   produto_id: string;
-  codigo: string;
+  codigo: string | null;
   nome: string;
   marca: string | null;
   modelo: string | null;
@@ -21,7 +21,7 @@ interface Grupo {
 
 @Component({
   selector: 'app-catalogo',
-  imports: [FormsModule, RouterLink, BrlPipe, DataHoraPipe, Icone],
+  imports: [FormsModule, RouterLink, BrlPipe, DataHoraPipe, Ident, Icone],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -52,13 +52,15 @@ interface Grupo {
           <li>
             <button class="produto" (click)="abrir(g)">
               <div class="linha1">
-                <span class="etiqueta">{{ g.codigo }}</span>
+                @if (g.codigo) {
+                  <span class="etiqueta">{{ g.codigo }}</span>
+                }
                 <strong class="clamp-2">{{ g.nome }}</strong>
               </div>
               <ul class="vars">
                 @for (v of g.variacoes; track v.variacao_id) {
                   <li [class.zerado]="v.estoque <= 0">
-                    <span class="var-nome">{{ v.variacao }}</span>
+                    <span class="var-nome">{{ v.variacao }}@if (v.codigo_barras) {<span class="barras-var num">{{ v.codigo_barras }}</span>}</span>
                     <span class="est num" [class.baixo]="v.estoque > 0 && v.estoque <= v.estoque_minimo">
                       {{ v.estoque <= 0 ? 'Sem estoque' : v.estoque + ' em estoque' }}
                     </span>
@@ -76,7 +78,7 @@ interface Grupo {
     <dialog #dlg class="folha" aria-label="Detalhes do produto">
       @if (sel(); as g) {
         <div class="topo">
-          <span class="etiqueta">{{ g.codigo }}</span>
+          <app-ident [codigo]="g.codigo" [barras]="g.variacoes.length === 1 ? g.variacoes[0].codigo_barras : null" />
           <button class="btn-icone" (click)="dlg.close()" aria-label="Fechar"><i-con nome="fechar" /></button>
         </div>
         @if (g.foto_url) {
@@ -106,7 +108,8 @@ interface Grupo {
   styles: `
     .busca { position: sticky; top: .5rem; z-index: 5; }
     .produto { width: 100%; display: grid; gap: .6rem; padding: .9rem 1rem; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
-    .linha1 { display: grid; grid-template-columns: auto 1fr; gap: .6rem; align-items: start; }
+    .linha1 { display: flex; gap: .6rem; align-items: start; }
+    .linha1 strong { flex: 1; min-width: 0; }
     .linha1 .etiqueta { margin-top: .1rem; }
     .vars { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
     .vars li {
@@ -114,6 +117,7 @@ interface Grupo {
       padding: .55rem .7rem; border-radius: var(--r-sm); background: var(--paper);
     }
     .var-nome { font-weight: 650; font-size: .92rem; min-width: 0; }
+    .barras-var { display: block; font-size: .75rem; font-weight: 600; color: var(--muted); }
     .est { justify-self: end; align-self: start; font-size: .78rem; font-weight: 650; color: var(--muted); }
     .est.baixo { color: var(--warn); }
     /* rótulo acima do valor: cabe R$ 9.999,99 nas duas colunas em 360px */

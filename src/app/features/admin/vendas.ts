@@ -44,7 +44,7 @@ import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
             </span>
             <ul class="itens">
               @for (i of v.venda_itens; track $index) {
-                <li><span class="num">{{ i.quantidade }}×</span> <span class="clamp-2">{{ i.variacoes.produtos.codigo }} {{ i.variacoes.produtos.nome }} · {{ i.variacoes.nome }}</span> <span class="muted num">{{ i.preco_unitario | brl }}</span></li>
+                <li><span class="num">{{ i.quantidade }}×</span> <span class="clamp-2">{{ i.variacoes.produtos.codigo || i.variacoes.codigo_barras }} {{ i.variacoes.produtos.nome }} · {{ i.variacoes.nome }}</span> <span class="muted num">{{ i.preco_unitario | brl }}</span></li>
               }
             </ul>
             @if (v.status === 'cancelada') {
