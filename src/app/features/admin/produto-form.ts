@@ -1,10 +1,11 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { CatalogoService } from '../../core/catalogo.service';
 import { AuthService } from '../../core/auth.service';
 import { DataHoraPipe, Icone, Toast, formatarBRL } from '../../shared/ui';
+import { Scanner } from '../../shared/scanner';
 import { Tipo } from './produtos';
 
 interface Variacao {
@@ -46,7 +47,7 @@ interface Compat {
 
 @Component({
   selector: 'app-produto-form',
-  imports: [FormsModule, RouterLink, Icone, DataHoraPipe],
+  imports: [FormsModule, RouterLink, Icone, DataHoraPipe, Scanner],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -118,7 +119,13 @@ interface Compat {
               <label class="campo"><span>Preço varejo</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.preco_varejo" /></label>
               <label class="campo"><span>Custo (opcional)</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.custo" /></label>
               <label class="campo"><span>Estoque mínimo</span><input type="number" min="0" inputmode="numeric" [(ngModel)]="v.estoque_minimo" /></label>
-              <label class="campo span2"><span>Código de barras (opcional)</span><input inputmode="numeric" [(ngModel)]="v.codigo_barras" /></label>
+              <div class="campo span2">
+                <span [id]="'cb-rotulo-' + v.id">Código de barras (opcional)</span>
+                <div class="cb-linha">
+                  <input inputmode="numeric" autocomplete="off" [attr.aria-labelledby]="'cb-rotulo-' + v.id" [(ngModel)]="v.codigo_barras" />
+                  <button type="button" class="btn sec cb-camera" (click)="lerCodigoPara(v)" [attr.aria-label]="'Ler código de barras da variação ' + (v.nome || 'nova') + ' com a câmera'"><i-con nome="scan" /></button>
+                </div>
+              </div>
             </div>
             <div class="rodape-var">
               <label class="ativo"><input type="checkbox" [(ngModel)]="v.ativo" /> Ativa</label>
@@ -175,6 +182,8 @@ interface Compat {
         <p class="muted small centro">Preencha tipo, número, nome e os preços de cada variação.</p>
       }
     </main>
+
+    <app-scanner #scanner (lido)="codigoLido($event)" />
   `,
   styles: `
     .titulo { flex: 1; font-size: 1.3rem; min-width: 0; }
@@ -190,6 +199,8 @@ interface Compat {
     .variacao { border: 1.5px solid var(--line); border-radius: var(--r-md); padding: .9rem; margin: 0; display: grid; gap: .75rem; }
     .variacao.inativa { border-style: dashed; background: var(--paper); }
     .rodape-var { display: flex; justify-content: space-between; align-items: center; }
+    .cb-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
+    .cb-camera { width: 48px; padding: 0; }
     .compat { list-style: none; padding: 0; margin: 0; display: grid; gap: .8rem; }
     .compat-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; align-items: center; }
     .compat .selo { border: 0; cursor: pointer; font: inherit; font-size: .78rem; font-weight: 700; }
@@ -204,6 +215,10 @@ interface Compat {
 })
 export class ProdutoForm {
   readonly id = input<string>();
+  /** `?barras=...`: novo produto já com o código lido em Vender/Estoque. */
+  readonly barras = input<string>();
+  private scanner = viewChild.required(Scanner);
+  private alvoLeitura: Variacao | null = null;
   private router = inject(Router);
   private toast = inject(Toast);
   private catalogo = inject(CatalogoService);
@@ -260,7 +275,14 @@ export class ProdutoForm {
     const t = await supabase.from('tipos').select('id, nome').order('id');
     this.tipos.set((t.data ?? []) as Tipo[]);
     const id = this.id();
-    if (!id) return;
+    if (!id) {
+      const barras = this.barras()?.trim();
+      if (barras && this.aceitarCodigo(barras, this.variacoes()[0])) {
+        this.variacoes()[0].codigo_barras = barras;
+        this.variacoes.update((l) => [...l]);
+      }
+      return;
+    }
     const { data, error } = await supabase
       .from('produtos')
       .select('*, variacoes(id, nome, preco_atacado, preco_varejo, codigo_barras, estoque_minimo, ativo), compatibilidades(*)')
@@ -318,6 +340,37 @@ export class ProdutoForm {
     while (usados.has(s) && s < 99) s++;
     this.seq.set(usados.has(s) ? null : s);
     if (usados.size >= 99) this.toast.mostrar('Este tipo já está quase cheio. Considere criar um segundo tipo.', 'info', 6000);
+  }
+
+  /** Abre a câmera para preencher o código de barras desta variação. */
+  protected lerCodigoPara(v: Variacao) {
+    this.alvoLeitura = v;
+    this.scanner().abrir();
+  }
+
+  protected codigoLido(codigo: string) {
+    const v = this.alvoLeitura;
+    this.alvoLeitura = null;
+    if (!v || !this.aceitarCodigo(codigo, v)) return;
+    v.codigo_barras = codigo.trim();
+    this.variacoes.update((l) => [...l]);
+    this.toast.mostrar(`Código ${codigo.trim()} lido`, 'ok', 2000);
+  }
+
+  /** O mesmo código não pode estar em duas variações (o banco também recusa). */
+  private aceitarCodigo(codigo: string, v: Variacao): boolean {
+    const c = codigo.trim();
+    const noCatalogo = this.catalogo.buscarBarras(c);
+    if (noCatalogo && noCatalogo.variacao_id !== v.id) {
+      this.toast.mostrar(`Esse código já está em ${noCatalogo.codigo} ${noCatalogo.nome} · ${noCatalogo.variacao}.`, 'erro', 6000);
+      return false;
+    }
+    const nesteProduto = this.variacoes().find((x) => x !== v && x.codigo_barras?.toString().trim() === c);
+    if (nesteProduto) {
+      this.toast.mostrar(`Esse código já está na variação ${nesteProduto.nome || 'nova'} deste produto.`, 'erro', 6000);
+      return false;
+    }
+    return true;
   }
 
   protected addVariacao() {

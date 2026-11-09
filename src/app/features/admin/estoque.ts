@@ -37,6 +37,16 @@ export const NOME_MOV: Record<string, string> = {
         </div>
       </header>
 
+      @if (barrasNovo()) {
+        <div class="aviso-novo" role="status">
+          <p>Código de barras <strong class="num">{{ barrasNovo() }}</strong> não está cadastrado.</p>
+          <div class="aviso-acoes">
+            <a class="btn" [routerLink]="['/admin/produtos/novo']" [queryParams]="{ barras: barrasNovo() }"><i-con nome="mais1" /> Cadastrar produto</a>
+            <button type="button" class="btn sec" (click)="barrasNovo.set('')">Fechar</button>
+          </div>
+        </div>
+      }
+
       <input class="input" type="search" placeholder="Buscar código, nome ou modelo" [ngModel]="termo()" (ngModelChange)="termo.set($event)" aria-label="Buscar" />
 
       <div class="rolagem-x" role="group" aria-label="Filtro">
@@ -117,6 +127,9 @@ export const NOME_MOV: Record<string, string> = {
     <app-scanner #scanner (lido)="porBarras($event)" />
   `,
   styles: `
+    .aviso-novo { display: grid; gap: .6rem; padding: .85rem 1rem; border-radius: var(--r-md); background: var(--warn-bg); color: var(--ink); }
+    .aviso-acoes { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
+    .aviso-acoes .btn { white-space: normal; text-align: center; line-height: 1.2; }
     .acoes-topo { display: flex; align-items: center; gap: .25rem; }
     .linha { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .75rem; align-items: start; padding: .8rem 1rem; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
     .nome { display: grid; min-width: 0; }
@@ -144,6 +157,8 @@ export class Estoque {
   protected nomeMov = NOME_MOV;
   protected termo = signal('');
   protected soBaixo = signal(false);
+  /** Código lido que não está no catálogo: oferece o cadastro já preenchido. */
+  protected barrasNovo = signal('');
   protected sel = signal<ItemCatalogo | null>(null);
   protected modo = signal<'entrada' | 'ajuste' | 'historico'>('entrada');
   protected qtd = signal<number>(1);
@@ -174,8 +189,8 @@ export class Estoque {
 
   protected porBarras(c: string) {
     const i = this.catalogo.buscarBarras(c);
+    this.barrasNovo.set(i ? '' : c.trim());
     if (i) this.abrir(i);
-    else this.toast.mostrar('Código de barras não cadastrado. Cadastre-o na variação do produto.', 'erro');
   }
 
   protected async entrada() {
