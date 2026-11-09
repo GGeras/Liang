@@ -15,16 +15,16 @@ interface Aba {
   selector: 'app-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, Icone],
   template: `
-    @if (!conexao.online() || vendas.fila().length) {
+    @if (!conexao.online() || vendas.minhaFila().length) {
       <div class="faixa" [class.off]="!conexao.online()" role="status">
         <i-con [nome]="conexao.online() ? 'nuvem' : 'sem_nuvem'" />
         @if (!conexao.online()) {
           <span>Sem internet. As vendas ficam guardadas no aparelho.</span>
         } @else {
-          <span>Enviando {{ vendas.fila().length }} venda(s) guardada(s)…</span>
+          <span>Enviando {{ vendas.minhaFila().length }} venda(s) guardada(s)…</span>
         }
-        @if (vendas.fila().length && !conexao.online()) {
-          <strong class="num">{{ vendas.fila().length }} na fila</strong>
+        @if (vendas.minhaFila().length && !conexao.online()) {
+          <strong class="num">{{ vendas.minhaFila().length }} na fila</strong>
         }
       </div>
     }

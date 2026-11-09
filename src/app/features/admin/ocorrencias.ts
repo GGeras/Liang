@@ -27,7 +27,7 @@ interface Ocorrencia {
       <header class="cabecalho"><h1>Ocorrências</h1></header>
       <p class="muted small">Vendas que o servidor recusou por falta de estoque, normalmente feitas sem internet ao mesmo tempo por dois vendedores. Confira com o vendedor e resolva com o cliente.</p>
 
-      <div class="segmento">
+      <div class="segmento" role="group" aria-label="Situação">
         <button [attr.aria-pressed]="!resolvidas()" (click)="ver(false)">Abertas</button>
         <button [attr.aria-pressed]="resolvidas()" (click)="ver(true)">Resolvidas</button>
       </div>

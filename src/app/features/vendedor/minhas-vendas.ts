@@ -36,12 +36,17 @@ export const SELECT_VENDA =
         <button class="btn sec pequeno" (click)="sair()"><i-con nome="sair" /> Sair</button>
       </header>
 
-      @if (vendas.fila().length) {
+      @if (vendas.minhaFila().length) {
         <section>
           <h2>Aguardando envio</h2>
           <ul class="lista fila">
-            @for (v of vendas.fila(); track v.id) {
-              <li><span>{{ v.cliente }}</span><span class="muted small">{{ v.criada_em | dataHora }}</span><strong class="num">{{ v.total_previsto | brl }}</strong></li>
+            @for (v of vendas.minhaFila(); track v.id) {
+              <li>
+                <span>{{ v.cliente }}</span><span class="muted small">{{ v.criada_em | dataHora }}</span><strong class="num">{{ v.total_previsto | brl }}</strong>
+                @if (v.ultimo_erro) {
+                  <span class="erro-envio small">Ainda não enviada: {{ v.ultimo_erro }}. Tentando de novo; se persistir, entre novamente.</span>
+                }
+              </li>
             }
           </ul>
         </section>
@@ -85,8 +90,9 @@ export const SELECT_VENDA =
     .fila li > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .fila li > .small { grid-row: 2; }
     .fila li > strong { grid-row: 1 / span 2; grid-column: 2; }
+    .fila .erro-envio { grid-column: 1 / -1; color: var(--danger); font-weight: 600; }
     .venda { display: grid; gap: .3rem; padding: .85rem 1rem; }
-    .venda.cancelada { opacity: .7; }
+    .venda.cancelada .topo .num { text-decoration: line-through; color: var(--muted); }
     .topo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: start; }
     .itens { margin: .2rem 0 0; padding: 0; list-style: none; font-size: .88rem; display: grid; gap: .2rem; }
     .itens li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .4rem; }
@@ -125,7 +131,7 @@ export class MinhasVendas {
   }
 
   async sair() {
-    if (this.vendas.fila().length) {
+    if (this.vendas.minhaFila().length) {
       this.toast.mostrar('Há vendas guardadas sem envio. Conecte à internet antes de sair.', 'erro', 5000);
       return;
     }

@@ -56,6 +56,8 @@ npm run build      # saída em dist/liang/browser
 ## Primeiro administrador
 Crie o usuário em Supabase → Authentication → Add user (marque *Auto Confirm*), depois rode no SQL Editor:
 ```sql
-update perfis set papel = 'admin', nome = 'Seu nome' where id = (select id from auth.users where email = 'seu@email.com');
+update perfis set papel = 'admin', ativo = true, nome = 'Seu nome' where id = (select id from auth.users where email = 'seu@email.com');
 ```
-Os próximos usuários são criados pelo próprio app em **Mais › Usuários**.
+Os próximos usuários são criados pelo próprio app em **Mais › Usuários** (edge function `usuarios`, que grava o papel em `app_metadata`).
+Qualquer usuário criado por outro caminho (cadastro público, painel do Supabase) nasce **vendedor inativo** e não acessa nada até um admin ativá-lo.
+Recomendado: Supabase › Authentication › Sign In / Providers › Email › desligar **Allow new users to sign up**.

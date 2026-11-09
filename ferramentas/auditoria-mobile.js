@@ -6,6 +6,9 @@ const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 const W = +process.argv[2] || 360, OUT = process.argv[3] || path.join(__dirname, '..', '.auditoria', String(+process.argv[2] || 360)), PAPEL = process.argv[4] || 'admin';
 fs.mkdirSync(OUT, { recursive: true });
+// Modo acessibilidade (ferramentas/acessibilidade.js): roda o @accesslint/core em cada tela e folha.
+const A11Y = process.env.LIANG_A11Y === '1';
+const acesso = {};
 const root = path.join(__dirname, '..', 'dist', 'liang', 'browser');
 const srv = http.createServer((q, r) => {
   let f = path.join(root, decodeURIComponent(q.url.split('?')[0]));
@@ -90,6 +93,13 @@ const telas = PAPEL === 'admin'
       if (document.documentElement.scrollWidth > W) out.push(`PAGINA scrollWidth=${document.documentElement.scrollWidth}`);
       return [...new Set(out)];
     }, W);
+    if (A11Y) {
+      await p.waitForTimeout(350); // espera a animação da folha terminar (opacidade parcial distorce o contraste)
+      if (!(await p.evaluate(() => 'AccessLint' in window))) await p.addScriptTag({ path: require.resolve('@accesslint/core/iife') });
+      acesso[nome] = await p.evaluate(() =>
+        AccessLint.runAudit(document).violations.map((v) => ({ regra: v.ruleId, impacto: v.impact, seletor: v.selector, msg: v.message, html: v.html.slice(0, 160) })),
+      );
+    }
   };
   for (const t of telas) {
     await p.goto('http://localhost:4301' + t); await p.waitForTimeout(700);
@@ -120,6 +130,10 @@ const telas = PAPEL === 'admin'
     await checar('folha-catalogo'); await p.screenshot({ path: `${OUT}/folha-catalogo.png` });
   }
   fs.writeFileSync(`${OUT}/relatorio.json`, JSON.stringify(relatorio, null, 1));
+  if (A11Y) {
+    fs.writeFileSync(`${OUT}/acessibilidade.json`, JSON.stringify(acesso, null, 1));
+    for (const [k, v] of Object.entries(acesso)) if (v.length) console.log('## a11y', k, '\n  ' + v.map((x) => `[${x.impacto}] ${x.regra} · ${x.seletor} · ${x.msg}`).join('\n  '));
+  }
   for (const [k, v] of Object.entries(relatorio)) if (v.length) console.log('##', k, '\n  ' + v.join('\n  '));
   await b.close(); srv.close();
 })();

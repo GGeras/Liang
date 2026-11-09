@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "auditoria": "ng build && node ferramentas/auditoria-mobile.js 320 && node ferramentas/auditoria-mobile.js 360 && node ferramentas/auditoria-mobile.js 412 && node ferramentas/auditoria-mobile.js 360 .auditoria/vendedor-360 vendedor"
+    "auditoria": "ng build && node ferramentas/auditoria-mobile.js 320 && node ferramentas/auditoria-mobile.js 360 && node ferramentas/auditoria-mobile.js 412 && node ferramentas/auditoria-mobile.js 360 .auditoria/vendedor-360 vendedor",
+    "acessibilidade": "ng build && node ferramentas/acessibilidade.js 360 .auditoria/a11y-admin admin && node ferramentas/acessibilidade.js 360 .auditoria/a11y-vendedor vendedor"
   },
   "prettier": {
     "printWidth": 100,
@@ -36,6 +37,7 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
+    "@accesslint/core": "^0.21.0",
     "@angular/build": "^20.3.42",
     "@angular/cli": "^20.3.42",
     "@angular/compiler-cli": "^20.3.0",

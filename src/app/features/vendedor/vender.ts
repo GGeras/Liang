@@ -1,4 +1,4 @@
-import { Component, ElementRef, Injectable, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, Injectable, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CatalogoService, normalizarCodigo } from '../../core/catalogo.service';
 import { VendasService } from '../../core/vendas.service';
@@ -23,6 +23,32 @@ export class CarrinhoService {
   readonly cliente = signal('');
   readonly pagamento = signal<FormaPagamento | null>(null);
 
+  constructor() {
+    const auth = inject(AuthService);
+    const catalogo = inject(CatalogoService);
+    // O carrinho é de quem está logado: trocou de usuário no aparelho, começa vazio
+    let dono: string | undefined;
+    effect(() => {
+      const id = auth.perfil()?.id;
+      untracked(() => {
+        if (dono !== undefined && id !== dono) this.limpar();
+        dono = id;
+      });
+    });
+    // Preço e estoque do carrinho acompanham o catálogo atualizado
+    effect(() => {
+      const mapa = new Map(catalogo.itens().map((i) => [i.variacao_id, i]));
+      untracked(() =>
+        this.itens.update((l) =>
+          l.map((x) => {
+            const atual = mapa.get(x.item.variacao_id);
+            return atual && atual !== x.item ? { ...x, item: atual } : x;
+          }),
+        ),
+      );
+    });
+  }
+
   limpar() {
     this.itens.set([]);
     this.cliente.set('');
@@ -43,7 +69,7 @@ export class CarrinhoService {
         </div>
       </header>
 
-      @for (a of vendas.avisos(); track a.id) {
+      @for (a of vendas.meusAvisos(); track a.id) {
         <div class="aviso" role="alert">
           <i-con nome="alerta" />
           <div>
@@ -118,7 +144,7 @@ export class CarrinhoService {
     }
 
     <!-- Escolha de variação -->
-    <dialog #dlgVar class="folha">
+    <dialog #dlgVar class="folha" aria-label="Escolher variação">
       @if (opcoes().length) {
         <div class="topo-folha">
           <div>
@@ -142,9 +168,9 @@ export class CarrinhoService {
     </dialog>
 
     <!-- Finalizar: cliente, pagamento e confirmação -->
-    <dialog #dlgFim class="folha">
+    <dialog #dlgFim class="folha" aria-labelledby="fim-titulo">
       <div class="topo-folha">
-        <h2>{{ confirmando() ? 'Confirmar venda' : 'Finalizar venda' }}</h2>
+        <h2 id="fim-titulo">{{ confirmando() ? 'Confirmar venda' : 'Finalizar venda' }}</h2>
         <button class="btn-icone" (click)="dlgFim.close()" aria-label="Fechar"><i-con nome="fechar" /></button>
       </div>
 

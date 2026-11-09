@@ -7,13 +7,14 @@
   --paper: #eef1f4;
   --surface: #ffffff;
   --ink: #172130;
-  --muted: #5b6676;
+  /* #4f5a69: 5,0:1 sobre --line (seletores), 6,2:1 sobre --paper — WCAG AA */
+  --muted: #4f5a69;
   --line: #d5dbe2;
   --cobalt: #2340c8;
   --cobalt-press: #1a31a0;
   --label: #ffd447;
   --label-edge: #e3b81f;
-  --ok: #17804f;
+  --ok: #146c41; /* 5,6:1 sobre --ok-bg; branco sobre ele 6,5:1 */
   --ok-bg: #e3f3ea;
   --danger: #c42f2f;
   --danger-bg: #fbe7e7;
@@ -119,7 +120,7 @@ li {
 }
 .chip {
   flex: none;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 0.9rem;
   border-radius: 99px;
   border: 1.5px solid var(--line);
@@ -214,7 +215,7 @@ li {
   width: 100%;
 }
 .btn.pequeno {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 0.75rem;
   font-size: 0.9rem;
   border-radius: var(--r-sm);
@@ -279,6 +280,17 @@ li {
 .input:focus {
   outline: none;
   border-color: var(--cobalt);
+  box-shadow: 0 0 0 3px rgb(35 64 200 / 0.3);
+}
+
+/* Texto só para leitor de tela */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Seletor segmentado (atacado/varejo, pagamento) */

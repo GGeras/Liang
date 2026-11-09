@@ -59,7 +59,7 @@ export const NOME_MOV: Record<string, string> = {
       </ul>
     </main>
 
-    <dialog #dlg class="folha">
+    <dialog #dlg class="folha" aria-label="Movimentar estoque">
       @if (sel(); as i) {
         <div class="topo">
           <div>
@@ -72,10 +72,10 @@ export const NOME_MOV: Record<string, string> = {
 
         <p class="saldo"><span class="num">{{ i.estoque }}</span> em estoque</p>
 
-        <div class="segmento" role="tablist">
-          <button role="tab" [attr.aria-pressed]="modo() === 'entrada'" (click)="modo.set('entrada')">Entrada</button>
-          <button role="tab" [attr.aria-pressed]="modo() === 'ajuste'" (click)="modo.set('ajuste')">Ajuste</button>
-          <button role="tab" [attr.aria-pressed]="modo() === 'historico'" (click)="modo.set('historico'); carregarMovs()">Histórico</button>
+        <div class="segmento" role="group" aria-label="O que fazer">
+          <button type="button" [attr.aria-pressed]="modo() === 'entrada'" (click)="modo.set('entrada')">Entrada</button>
+          <button type="button" [attr.aria-pressed]="modo() === 'ajuste'" (click)="modo.set('ajuste')">Ajuste</button>
+          <button type="button" [attr.aria-pressed]="modo() === 'historico'" (click)="modo.set('historico'); carregarMovs()">Histórico</button>
         </div>
 
         @switch (modo()) {

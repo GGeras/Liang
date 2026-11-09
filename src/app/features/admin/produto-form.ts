@@ -144,7 +144,7 @@ interface Compat {
                 </button>
                 <button class="btn-icone" (click)="removerCompat(idx)" [attr.aria-label]="'Remover ' + c.modelo"><i-con nome="apagar" /></button>
               </div>
-              <input class="input obs" [(ngModel)]="c.observacao" placeholder="Observação (opcional)" />
+              <input class="input obs" [(ngModel)]="c.observacao" placeholder="Observação (opcional)" [attr.aria-label]="'Observação sobre ' + c.modelo" />
             </li>
           } @empty {
             <li class="muted small">Nenhuma compatibilidade anotada.</li>
@@ -188,7 +188,7 @@ interface Compat {
     .ativo input { width: 20px; height: 20px; accent-color: var(--cobalt); }
     .titulo-acao { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; }
     .variacao { border: 1.5px solid var(--line); border-radius: var(--r-md); padding: .9rem; margin: 0; display: grid; gap: .75rem; }
-    .variacao.inativa { opacity: .6; }
+    .variacao.inativa { border-style: dashed; background: var(--paper); }
     .rodape-var { display: flex; justify-content: space-between; align-items: center; }
     .compat { list-style: none; padding: 0; margin: 0; display: grid; gap: .8rem; }
     .compat-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; align-items: center; }

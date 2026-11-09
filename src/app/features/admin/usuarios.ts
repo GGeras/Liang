@@ -36,9 +36,9 @@ import { Icone, Toast } from '../../shared/ui';
       </ul>
     </main>
 
-    <dialog #dlg class="folha">
+    <dialog #dlg class="folha" aria-labelledby="usuario-titulo">
       <div class="topo">
-        <h2>{{ sel() ? sel()!.nome : 'Novo usuário' }}</h2>
+        <h2 id="usuario-titulo">{{ sel() ? sel()!.nome : 'Novo usuário' }}</h2>
         <button class="btn-icone" (click)="dlg.close()" aria-label="Fechar"><i-con nome="fechar" /></button>
       </div>
       <div class="form">
@@ -48,7 +48,7 @@ import { Icone, Toast } from '../../shared/ui';
         }
         <div class="campo">
           <span>Perfil</span>
-          <div class="segmento">
+          <div class="segmento" role="group" aria-label="Perfil">
             <button [attr.aria-pressed]="papel() === 'vendedor'" (click)="papel.set('vendedor')" [disabled]="proprio()">Vendedor</button>
             <button [attr.aria-pressed]="papel() === 'admin'" (click)="papel.set('admin')" [disabled]="proprio()">Administrador</button>
           </div>
@@ -69,7 +69,7 @@ import { Icone, Toast } from '../../shared/ui';
   `,
   styles: `
     .usuario { display: flex; justify-content: space-between; align-items: center; padding: .8rem 1rem; }
-    .usuario.inativo { opacity: .6; }
+    .usuario.inativo strong { color: var(--muted); }
     .selos { display: flex; gap: .35rem; margin-top: .25rem; }
     .topo { display: flex; justify-content: space-between; align-items: center; }
     .form { display: grid; gap: 1rem; margin-top: 1rem; }

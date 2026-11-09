@@ -39,7 +39,9 @@ Deno.serve(async (req) => {
       email: String(email).trim().toLowerCase(),
       password: String(senha),
       email_confirm: true,
-      user_metadata: { nome: String(nome).trim(), papel },
+      user_metadata: { nome: String(nome).trim() },
+      // Só o servidor grava app_metadata: é daqui que o banco tira o papel e libera o acesso
+      app_metadata: { criado_pelo_admin: true, papel, nome: String(nome).trim() },
     });
     if (error) return json({ erro: /already/i.test(error.message) ? 'Já existe um usuário com esse e-mail' : error.message }, 400);
     return json({ ok: true, id: data.user.id });

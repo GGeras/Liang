@@ -77,9 +77,9 @@ interface ProdutoLinha {
       }
     </main>
 
-    <dialog #dlgTipos class="folha">
+    <dialog #dlgTipos class="folha" aria-labelledby="tipos-titulo">
       <div class="topo">
-        <h2>Tipos de produto</h2>
+        <h2 id="tipos-titulo">Tipos de produto</h2>
         <button class="btn-icone" (click)="dlgTipos.close()" aria-label="Fechar"><i-con nome="fechar" /></button>
       </div>
       <p class="muted small">Os dois primeiros dígitos do código. Ex.: 01 = Telas.</p>
@@ -104,7 +104,7 @@ interface ProdutoLinha {
     .grupo .conta { margin-left: auto; font-weight: 600; }
     .linha { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .75rem; align-items: start; padding: .8rem 1rem; color: inherit; text-decoration: none; }
     .linha .etiqueta { margin-top: .1rem; }
-    .linha.inativo { opacity: .55; }
+    .linha.inativo strong { color: var(--muted); }
     .nome { display: grid; gap: .1rem; min-width: 0; }
     .selos { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .25rem; }
     .sem-itens { padding: 0 .25rem; }
