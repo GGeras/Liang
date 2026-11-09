@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { CatalogoService, normalizarCodigo } from '../../core/catalogo.service';
 import { VendasService } from '../../core/vendas.service';
 import { AuthService } from '../../core/auth.service';
+import { AtualizacaoService } from '../../core/atualizacao.service';
 import {
   FormaPagamento,
   ItemCarrinho,
@@ -24,9 +25,13 @@ export class CarrinhoService {
   readonly cliente = signal('');
   readonly pagamento = signal<FormaPagamento | null>(null);
 
+  private atualizacao = inject(AtualizacaoService);
+
   constructor() {
     const auth = inject(AuthService);
     const catalogo = inject(CatalogoService);
+    // Venda em andamento: a versão nova do app espera o carrinho esvaziar
+    this.atualizacao.bloquear(() => this.itens().length > 0 || !!this.cliente().trim());
     // O carrinho é de quem está logado: trocou de usuário no aparelho, começa vazio
     let dono: string | undefined;
     effect(() => {
@@ -54,6 +59,8 @@ export class CarrinhoService {
     this.itens.set([]);
     this.cliente.set('');
     this.pagamento.set(null);
+    // Venda terminou: se houver versão nova esperando, entra depois do aviso "Venda registrada"
+    setTimeout(() => this.atualizacao.tentarAplicar(), 4000);
   }
 }
 
