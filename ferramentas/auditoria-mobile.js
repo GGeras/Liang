@@ -80,7 +80,15 @@ const telas = PAPEL === 'admin'
   await ctx.route('**/fonts.googleapis.com/**', (rt) => rt.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   const p = await ctx.newPage();
   p.on('pageerror', (e) => console.log('ERRO JS', e.message));
-  p.on('console', (m) => { if (/Content Security Policy|Refused to/i.test(m.text())) console.log('CSP', m.text().slice(0, 200)); });
+  p.on('console', (m) => {
+    if (/Content Security Policy|Refused to/i.test(m.text())) console.log('CSP', m.text().slice(0, 200));
+    else if (m.type() === 'error') console.log('ERRO CONSOLE', m.text().slice(0, 200));
+  });
+  // Sem login: toda rota protegida precisa cair em /entrar (pega erros de guard, ex.: NG0203)
+  for (const t of ['/', '/vender', '/admin/painel']) {
+    await p.goto('http://localhost:4301' + t); await p.waitForTimeout(600);
+    if (!p.url().endsWith('/entrar')) console.log('SEM LOGIN', t, 'não foi para /entrar:', p.url());
+  }
   await p.goto('http://localhost:4301/entrar'); await p.waitForTimeout(500);
   await p.screenshot({ path: `${OUT}/00-entrar.png` });
   await p.evaluate((uid) => localStorage.setItem('liang-auth', JSON.stringify({ access_token: 'x', refresh_token: 'y', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800, user: { id: uid, email: 'a@a.com', aud: 'authenticated', role: 'authenticated' } })), uid);
