@@ -71,6 +71,31 @@ export class Icone {
   }
 }
 
+/** Texto de identificação do item: o 00-00 ou, se não houver, o código de barras. */
+export function identTexto(codigo: string | null | undefined, barras: string | null | undefined): string {
+  return codigo || barras || '';
+}
+
+/**
+ * Identificação do produto: OU a etiqueta amarela 00-00 (produto sem código de barras),
+ * OU o código de barras do item. Nunca os dois.
+ */
+@Component({
+  selector: 'app-ident',
+  template: `
+    @if (codigo()) {
+      <span class="etiqueta">{{ codigo() }}</span>
+    } @else if (barras()) {
+      <span class="barras-id num"><span class="sr-only">Código de barras </span>{{ barras() }}</span>
+    }
+  `,
+  host: { style: 'display:inline-flex; flex: none' },
+})
+export class Ident {
+  readonly codigo = input<string | null | undefined>();
+  readonly barras = input<string | null | undefined>();
+}
+
 /** Avisos curtos no topo da tela. */
 @Injectable({ providedIn: 'root' })
 export class Toast {

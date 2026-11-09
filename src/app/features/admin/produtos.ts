@@ -2,7 +2,7 @@ import { Component, ElementRef, computed, inject, signal, viewChild } from '@ang
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
-import { Icone, Toast } from '../../shared/ui';
+import { Ident, Icone, Toast } from '../../shared/ui';
 import { Scanner } from '../../shared/scanner';
 
 export interface Tipo {
@@ -12,7 +12,7 @@ export interface Tipo {
 
 interface ProdutoLinha {
   id: string;
-  codigo: string;
+  codigo: string | null;
   tipo_id: number;
   nome: string;
   marca: string | null;
@@ -24,7 +24,7 @@ interface ProdutoLinha {
 
 @Component({
   selector: 'app-produtos',
-  imports: [FormsModule, RouterLink, Icone, Scanner],
+  imports: [FormsModule, RouterLink, Ident, Icone, Scanner],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -45,12 +45,12 @@ interface ProdutoLinha {
 
       @for (g of grupos(); track g.tipo.id) {
         <section>
-          <h2 class="grupo"><span class="etiqueta">{{ pad(g.tipo.id) }}</span> <span class="uma-linha">{{ g.tipo.nome }}</span> <span class="muted small num conta">{{ g.itens.length }} de 100</span></h2>
+          <h2 class="grupo"><span class="etiqueta">{{ pad(g.tipo.id) }}</span> <span class="uma-linha">{{ g.tipo.nome }}</span> <span class="muted small num conta" [attr.aria-label]="numerados(g.itens) + ' de 100 códigos 00-00 usados'">{{ numerados(g.itens) }} de 100</span></h2>
           <ul class="lista">
             @for (p of g.itens; track p.id) {
               <li>
                 <a class="linha" [routerLink]="['/admin/produtos', p.id]" [class.inativo]="!p.ativo">
-                  <span class="etiqueta">{{ p.codigo }}</span>
+                  <app-ident [codigo]="p.codigo" [barras]="p.variacoes[0]?.codigo_barras" />
                   <span class="nome">
                     <strong class="clamp-2">{{ p.nome }}</strong>
                     <span class="muted small uma-linha">{{ resumoVar(p) }}</span>
@@ -106,7 +106,7 @@ interface ProdutoLinha {
     .grupo { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; min-width: 0; }
     .grupo .conta { margin-left: auto; font-weight: 600; }
     .linha { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .75rem; align-items: start; padding: .8rem 1rem; color: inherit; text-decoration: none; }
-    .linha .etiqueta { margin-top: .1rem; }
+    .linha app-ident { margin-top: .1rem; }
     .linha.inativo strong { color: var(--muted); }
     .nome { display: grid; gap: .1rem; min-width: 0; }
     .selos { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .25rem; }
@@ -160,6 +160,11 @@ export class Produtos {
 
   protected pad(n: number) {
     return String(n).padStart(2, '0');
+  }
+
+  /** Quantos produtos do tipo usam número 00-00 (os com código de barras não contam no limite de 100). */
+  protected numerados(itens: ProdutoLinha[]) {
+    return itens.filter((p) => p.codigo).length;
   }
 
   protected resumoVar(p: ProdutoLinha) {

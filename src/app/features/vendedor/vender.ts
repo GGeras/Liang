@@ -13,7 +13,7 @@ import {
   pagamentosPermitidos,
   precoDe,
 } from '../../core/models';
-import { BrlPipe, Icone, Toast, formatarBRL } from '../../shared/ui';
+import { BrlPipe, Ident, Icone, Toast, formatarBRL, identTexto } from '../../shared/ui';
 import { Scanner } from '../../shared/scanner';
 
 /** Carrinho fica vivo enquanto o vendedor navega entre as abas. */
@@ -59,7 +59,7 @@ export class CarrinhoService {
 
 @Component({
   selector: 'app-vender',
-  imports: [FormsModule, RouterLink, BrlPipe, Icone, Scanner],
+  imports: [FormsModule, RouterLink, BrlPipe, Ident, Icone, Scanner],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -114,7 +114,7 @@ export class CarrinhoService {
           <ul class="lista">
             @for (l of c.itens(); track l.item.variacao_id) {
               <li class="item">
-                <span class="etiqueta">{{ l.item.codigo }}</span>
+                <app-ident [codigo]="l.item.codigo" [barras]="l.item.codigo_barras" />
                 <div class="info">
                   <strong class="clamp-2">{{ l.item.nome }}</strong>
                   <span class="muted small">{{ l.item.variacao }}</span>
@@ -154,7 +154,7 @@ export class CarrinhoService {
       @if (opcoes().length) {
         <div class="topo-folha">
           <div>
-            <span class="etiqueta">{{ opcoes()[0].codigo }}</span>
+            <app-ident [codigo]="opcoes()[0].codigo" [barras]="opcoes()[0].codigo_barras" />
             <h2>{{ opcoes()[0].nome }}</h2>
           </div>
           <button class="btn-icone" (click)="dlgVar.close()" aria-label="Fechar"><i-con nome="fechar" /></button>
@@ -209,7 +209,7 @@ export class CarrinhoService {
           </dl>
           <ul class="itens-resumo">
             @for (l of c.itens(); track l.item.variacao_id) {
-              <li><span class="num">{{ l.quantidade }}×</span> <span class="clamp-2">{{ l.item.codigo }} {{ l.item.nome }} · {{ l.item.variacao }}</span> <span class="num">{{ preco(l.item) * l.quantidade | brl }}</span></li>
+              <li><span class="num">{{ l.quantidade }}×</span> <span class="clamp-2">{{ l.item.codigo || l.item.codigo_barras }} {{ l.item.nome }} · {{ l.item.variacao }}</span> <span class="num">{{ preco(l.item) * l.quantidade | brl }}</span></li>
             }
           </ul>
           <p class="total-resumo"><span>Total</span><strong class="num">{{ total() | brl }}</strong></p>
@@ -251,7 +251,7 @@ export class CarrinhoService {
     /* etiqueta | nome            */
     /* stepper   | preço · total  */
     .item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .6rem .7rem; padding: .85rem 1rem; align-items: start; }
-    .item .etiqueta { margin-top: .1rem; }
+    .item app-ident { margin-top: .1rem; }
     .info { display: grid; gap: .1rem; min-width: 0; }
     .rodape-item { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
     .qtd { display: flex; align-items: center; background: var(--paper); border-radius: 99px; flex: none; }
@@ -393,7 +393,7 @@ export class Vender {
       if (this.auth.isAdmin()) this.barrasNovo.set(codigo.trim());
       return this.falhar(`Código de barras ${codigo.trim()} não cadastrado. Só é possível vender produtos do catálogo.`);
     }
-    if (this.disponivel(item) <= 0) return this.falhar(`${item.codigo} ${item.nome} · ${item.variacao} está sem estoque.`);
+    if (this.disponivel(item) <= 0) return this.falhar(`${identTexto(item.codigo, item.codigo_barras)} ${item.nome} · ${item.variacao} está sem estoque.`);
     this.adicionar(item);
   }
 

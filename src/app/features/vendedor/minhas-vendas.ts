@@ -17,11 +17,11 @@ export interface VendaLinha {
   offline: boolean;
   motivo_cancelamento: string | null;
   vendedor?: { nome: string } | null;
-  venda_itens: { quantidade: number; preco_unitario: number; variacoes: { nome: string; produtos: { codigo: string; nome: string } } }[];
+  venda_itens: { quantidade: number; preco_unitario: number; variacoes: { nome: string; codigo_barras: string | null; produtos: { codigo: string | null; nome: string } } }[];
 }
 
 export const SELECT_VENDA =
-  'id, cliente_nome, tipo_preco, forma_pagamento, total, status, criada_em, offline, motivo_cancelamento, estoque_devolvido, vendedor:perfis!vendas_vendedor_id_fkey(nome), venda_itens(quantidade, preco_unitario, variacoes(nome, produtos(codigo, nome)))';
+  'id, cliente_nome, tipo_preco, forma_pagamento, total, status, criada_em, offline, motivo_cancelamento, estoque_devolvido, vendedor:perfis!vendas_vendedor_id_fkey(nome), venda_itens(quantidade, preco_unitario, variacoes(nome, codigo_barras, produtos(codigo, nome)))';
 
 @Component({
   selector: 'app-minhas-vendas',
@@ -66,7 +66,7 @@ export const SELECT_VENDA =
             <span class="muted small">{{ v.criada_em | dataHora }} · {{ v.tipo_preco === 'atacado' ? 'Atacado' : 'Varejo' }} · {{ pag[v.forma_pagamento] }}</span>
             <ul class="itens">
               @for (i of v.venda_itens; track $index) {
-                <li><span class="num">{{ i.quantidade }}×</span> <span class="clamp-2">{{ i.variacoes.produtos.codigo }} {{ i.variacoes.produtos.nome }} · {{ i.variacoes.nome }}</span></li>
+                <li><span class="num">{{ i.quantidade }}×</span> <span class="clamp-2">{{ i.variacoes.produtos.codigo || i.variacoes.codigo_barras }} {{ i.variacoes.produtos.nome }} · {{ i.variacoes.nome }}</span></li>
               }
             </ul>
             @if (v.status === 'cancelada') {

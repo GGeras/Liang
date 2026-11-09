@@ -13,7 +13,8 @@ export interface Perfil {
 export interface ItemCatalogo {
   variacao_id: string;
   produto_id: string;
-  codigo: string;
+  /** 00-00 — só existe em produto SEM código de barras. */
+  codigo: string | null;
   tipo_id: number;
   tipo: string;
   nome: string;
@@ -42,7 +43,7 @@ export interface VendaPendente {
   cliente: string;
   tipo_preco: TipoPreco;
   pagamento: FormaPagamento;
-  itens: { variacao_id: string; quantidade: number; codigo: string; nome: string }[];
+  itens: { variacao_id: string; quantidade: number; codigo: string | null; nome: string }[];
   total_previsto: number;
   criada_em: string;
   /** Último erro técnico ao enviar (a venda continua na fila e é reenviada). */

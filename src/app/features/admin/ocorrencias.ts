@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { supabase, mensagemErro } from '../../core/supabase';
-import { DataHoraPipe, Toast } from '../../shared/ui';
+import { DataHoraPipe, Ident, Toast } from '../../shared/ui';
 
 interface Ocorrencia {
   id: string;
@@ -15,13 +15,13 @@ interface Ocorrencia {
     tipo_preco?: string;
     pagamento?: string;
     criada_em?: string;
-    faltando?: { codigo?: string; produto?: string; variacao?: string; pedido?: number; disponivel?: number; erro?: string }[];
+    faltando?: { codigo?: string | null; codigo_barras?: string | null; produto?: string; variacao?: string; pedido?: number; disponivel?: number; erro?: string }[];
   };
 }
 
 @Component({
   selector: 'app-ocorrencias',
-  imports: [DataHoraPipe],
+  imports: [DataHoraPipe, Ident],
   template: `
     <main class="pagina">
       <header class="cabecalho"><h1>Ocorrências</h1></header>
@@ -49,7 +49,7 @@ interface Ocorrencia {
                 @if (f.erro) {
                   <li>Item removido do catálogo</li>
                 } @else {
-                  <li><span class="etiqueta">{{ f.codigo }}</span> <span><span class="clamp-2">{{ f.produto }} · {{ f.variacao }}</span><span class="small muted">Pediu {{ f.pedido }}, havia {{ f.disponivel }}</span></span></li>
+                  <li><app-ident [codigo]="f.codigo" [barras]="f.codigo_barras" /> <span><span class="clamp-2">{{ f.produto }} · {{ f.variacao }}</span><span class="small muted">Pediu {{ f.pedido }}, havia {{ f.disponivel }}</span></span></li>
                 }
               }
             </ul>

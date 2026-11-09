@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { supabase, mensagemErro } from '../../core/supabase';
-import { DataHoraPipe, Icone, Toast, baixarCsv } from '../../shared/ui';
+import { DataHoraPipe, Ident, Icone, Toast, baixarCsv } from '../../shared/ui';
 import { NOME_MOV } from './estoque';
 
 interface MovLinha {
@@ -13,14 +13,14 @@ interface MovLinha {
   motivo: string | null;
   criado_em: string;
   perfis: { nome: string } | null;
-  variacoes: { nome: string; produtos: { codigo: string; nome: string } };
+  variacoes: { nome: string; codigo_barras: string | null; produtos: { codigo: string | null; nome: string } };
 }
 
-const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado_em, perfis(nome), variacoes(nome, produtos(codigo, nome))';
+const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado_em, perfis(nome), variacoes(nome, codigo_barras, produtos(codigo, nome))';
 
 @Component({
   selector: 'app-movimentos',
-  imports: [FormsModule, DataHoraPipe, Icone],
+  imports: [FormsModule, DataHoraPipe, Ident, Icone],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -43,7 +43,7 @@ const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado
       <ul class="lista">
         @for (m of lista(); track m.id) {
           <li class="mov">
-            <span class="etiqueta">{{ m.variacoes.produtos.codigo }}</span>
+            <app-ident [codigo]="m.variacoes.produtos.codigo" [barras]="m.variacoes.codigo_barras" />
             <div class="desc">
               <strong class="clamp-2">{{ m.variacoes.produtos.nome }}</strong>
               <span class="muted small uma-linha">{{ m.variacoes.nome }}</span>
@@ -70,7 +70,7 @@ const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado
   `,
   styles: `
     .mov { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .35rem .65rem; padding: .8rem 1rem; align-items: start; }
-    .mov .etiqueta { margin-top: .1rem; }
+    .mov app-ident { margin-top: .1rem; }
     .desc { display: grid; min-width: 0; line-height: 1.3; }
     .qtd { display: grid; justify-items: end; line-height: 1.2; }
     .qtd .num:first-child { font-weight: 800; font-size: 1.15rem; }
@@ -131,7 +131,7 @@ export class Movimentos {
     baixarCsv(`liang-movimentacoes-${new Date().toISOString().slice(0, 10)}.csv`, [
       ['Data', 'Tipo', 'Código', 'Produto', 'Variação', 'Quantidade', 'Saldo após', 'Custo un.', 'Usuário', 'Motivo'],
       ...todos.map((m) => [
-        fmt.format(new Date(m.criado_em)), NOME_MOV[m.tipo], m.variacoes.produtos.codigo, m.variacoes.produtos.nome,
+        fmt.format(new Date(m.criado_em)), NOME_MOV[m.tipo], m.variacoes.produtos.codigo ?? m.variacoes.codigo_barras ?? '', m.variacoes.produtos.nome,
         m.variacoes.nome, m.quantidade, m.saldo_apos, m.custo_unitario === null ? '' : Number(m.custo_unitario),
         m.perfis?.nome ?? '', m.motivo ?? '',
       ]),

@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { CatalogoService } from '../../core/catalogo.service';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { ItemCatalogo } from '../../core/models';
-import { BrlPipe, DataHoraPipe, Icone, Toast, baixarCsv } from '../../shared/ui';
+import { BrlPipe, DataHoraPipe, Ident, Icone, Toast, baixarCsv } from '../../shared/ui';
 import { Scanner } from '../../shared/scanner';
 
 interface Mov {
@@ -25,7 +25,7 @@ export const NOME_MOV: Record<string, string> = {
 
 @Component({
   selector: 'app-estoque',
-  imports: [FormsModule, RouterLink, BrlPipe, DataHoraPipe, Icone, Scanner],
+  imports: [FormsModule, RouterLink, BrlPipe, DataHoraPipe, Ident, Icone, Scanner],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -58,7 +58,7 @@ export const NOME_MOV: Record<string, string> = {
         @for (i of lista(); track i.variacao_id) {
           <li>
             <button class="linha" (click)="abrir(i)">
-              <span class="etiqueta">{{ i.codigo }}</span>
+              <app-ident [codigo]="i.codigo" [barras]="i.codigo_barras" />
               <span class="nome"><strong class="clamp-2">{{ i.nome }}</strong><span class="muted small uma-linha">{{ i.variacao }}</span></span>
               <span class="qtd num" [class.baixo]="i.estoque <= i.estoque_minimo" [class.zero]="i.estoque <= 0">{{ i.estoque }}</span>
             </button>
@@ -73,7 +73,7 @@ export const NOME_MOV: Record<string, string> = {
       @if (sel(); as i) {
         <div class="topo">
           <div>
-            <span class="etiqueta">{{ i.codigo }}</span>
+            <app-ident [codigo]="i.codigo" [barras]="i.codigo_barras" />
             <h2 class="clamp-2">{{ i.nome }}</h2>
             <p class="muted">{{ i.variacao }} · mínimo {{ i.estoque_minimo }}</p>
           </div>
@@ -133,7 +133,7 @@ export const NOME_MOV: Record<string, string> = {
     .acoes-topo { display: flex; align-items: center; gap: .25rem; }
     .linha { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .75rem; align-items: start; padding: .8rem 1rem; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
     .nome { display: grid; min-width: 0; }
-    .linha .etiqueta { margin-top: .1rem; }
+    .linha app-ident { margin-top: .1rem; }
     .qtd { font-size: 1.3rem; line-height: 1.2; font-weight: 800; font-stretch: 112%; min-width: 2.5rem; text-align: right; }
     .qtd.baixo { color: var(--warn); }
     .qtd.zero { color: var(--danger); }
