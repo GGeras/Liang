@@ -102,3 +102,28 @@ Nenhum estouro horizontal. O único aviso (`CORTADO .rotulo-opcional` em 320) é
 
 ## Ainda em aberto (médio/baixo, sem regra de negócio)
 3.4 salvar produto numa transação · 3.5 tipos gerados do banco · 4.1 aviso de nova versão do PWA · 4.2 ícone maskable · 4.3 CSP · 1.8 último admin · 2.6 alinhar migrations · selos de compatibilidade com 44 px.
+
+---
+
+# Varredura de segurança e simulação de ataque
+
+Método: chave pública do front contra a API real (REST, RPC, Storage, edge function, GraphQL), e ataques como vendedor, vendedor de outra conta e usuário inativo, simulados no banco em transação desfeita (banco continua vazio). Também: busca por XSS no código, segredos no histórico do git e `npm audit`.
+
+| # | Grav. | Ataque / achado | Antes | Correção |
+|---|---|---|---|---|
+| S1 | **A** | Vendedor lê o custo das peças pela API | lia `variacoes.custo` e `venda_itens.custo_unitario` | Coluna fora do SELECT; admin lê por `custos_variacoes()` e salva por `salvar_produto()` (transação única, resolve 3.4) |
+| S2 | **A** | Marcar venda como "offline" com data antiga para pegar preço anterior | janela de 7 dias | Janela de 24 h (decisão tomada; era a pergunta 1) |
+| S3 | **A** | Quantidade negativa misturada (`+3` e `−2`) e fracionada | virava venda de 1 unidade | Cada item validado: inteiro 1–9999, variação em formato uuid |
+| S4 | M | Payload gigante: cliente com 200 mil caracteres, 3.000 itens | aceito / ocorrência enorme | Cliente ≤ 120, itens ≤ 100, sem ocorrência para entrada inválida |
+| S5 | M | Reusar o id de venda de outro vendedor | respondia "ok, duplicada" | Responde `id_em_uso` |
+| S6 | M | `anon` com permissões de escrita/leitura nas tabelas (RLS segurava) | 200 `[]` | `anon` sem nenhum acesso em `public` (401) |
+| S7 | M | `authenticated` com INSERT/UPDATE/DELETE em tabelas que só as funções escrevem | RLS segurava | Permissões removidas; `perfis` só atualiza nome/papel/ativo |
+| S8 | M | CSV exportado com injeção de fórmula (cliente `=HIPERLINK(...)`) | virava fórmula no Excel | Prefixo `'` em valores iniciados por `= + - @` |
+| S9 | M | Sem CSP, sem proteção contra iframe | — | CSP estrita (`script-src 'self'`), HSTS, `X-Frame-Options`, COOP, Permissions-Policy; CSS crítico inline desligado para a CSP valer |
+| S10 | B | Edge function sem validar e-mail, nome, senha longa e id | — | Validação (senha 8–72, nome ≤ 80, e-mail, uuid) |
+| S11 | B | Admin podia rebaixar/desativar o último admin | — | Trigger impede |
+| — | ok | Sem `innerHTML`/`bypassSecurityTrust`; nenhum segredo no git; dependências de produção sem vulnerabilidade; GraphQL desligado; upload de HTML barrado; função `usuarios` exige admin ativo | | |
+
+Depois das correções, todos os ataques acima são bloqueados; fluxos legítimos testados (admin salva produto com custo, auditoria registra, entrada atualiza custo, vendedor vende e vê os próprios itens).
+
+**Pendente do seu lado:** desligar *Allow new users to sign up* no Supabase (hoje um estranho cria conta, inativa, mas cria); ativar proteção de senha vazada (*Leaked password protection*) se o plano permitir. Baixo: `npm audit` acusa 2 moderadas só em ferramentas de build (glob/minimatch), sem efeito no app.

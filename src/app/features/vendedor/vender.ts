@@ -178,7 +178,7 @@ export class CarrinhoService {
         <div class="form">
           <label class="campo">
             <span>Nome do cliente</span>
-            <input [ngModel]="c.cliente()" (ngModelChange)="c.cliente.set($event)" autocomplete="off" autocapitalize="words" />
+            <input [ngModel]="c.cliente()" (ngModelChange)="c.cliente.set($event)" autocomplete="off" autocapitalize="words" maxlength="120" />
           </label>
           <div class="campo">
             <span>Forma de pagamento</span>

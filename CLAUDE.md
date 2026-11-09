@@ -18,11 +18,11 @@ PWA mobile de controle de estoque de peças de celular (telas, tampas, conectore
    - Cartão só é aceito no varejo. Atacado aceita só dinheiro ou Pix.
    - O vendedor confirma a venda antes de enviar.
 5. **Leitura de produto:** pelo código 00-00 ou pelo código de barras. Só é possível vender produto cadastrado e com estoque suficiente para a quantidade.
-6. **Offline:** a venda fica numa fila criptografada no aparelho (AES-GCM, chave não exportável; ver `core/cofre.ts`). Ao reconectar, o servidor decide: quem chega primeiro leva o estoque. A venda recusada vira **ocorrência** para o admin, e o vendedor é avisado. A venda offline usa o preço vigente na hora da venda (`preco_em`).
+6. **Offline:** a venda fica numa fila criptografada no aparelho (AES-GCM, chave não exportável; ver `core/cofre.ts`). Ao reconectar, o servidor decide: quem chega primeiro leva o estoque. A venda recusada vira **ocorrência** para o admin, e o vendedor é avisado. A venda offline usa o preço vigente na hora da venda (`preco_em`), no máximo 24 h para trás.
 7. **Cancelamento:** só o admin cancela, com motivo, e escolhe se o estoque volta.
 8. **Entrada:** registra quem, quando e quantos; o custo é opcional e, quando informado, atualiza o custo da variação.
 9. **Ajuste de inventário:** só o admin, com motivo obrigatório.
-10. **Referência absoluta:** o sistema é a fonte da verdade. O histórico é imutável: `movimentos`, `venda_itens` e `alteracoes_catalogo` bloqueiam UPDATE e DELETE. O estoque só muda pelas funções `registrar_venda`, `registrar_entrada`, `ajustar_estoque` e `cancelar_venda`, que validam o perfil por dentro (os avisos do linter sobre SECURITY DEFINER nelas são esperados).
+10. **Referência absoluta:** o sistema é a fonte da verdade. O histórico é imutável: `movimentos`, `venda_itens` e `alteracoes_catalogo` bloqueiam UPDATE e DELETE. O estoque só muda pelas funções `registrar_venda`, `registrar_entrada`, `ajustar_estoque` e `cancelar_venda`, que validam o perfil por dentro (os avisos do linter sobre SECURITY DEFINER nelas são esperados, assim como em `salvar_produto`, `custos_variacoes`, `dashboard_resumo`, `resolver_ocorrencia`, `is_admin` e `is_ativo`).
 11. **Perfis:** admin (pode haver vários) e vendedor. O vendedor vê o estoque e o próprio histórico. O admin tem painel, estoque, produtos, vendas, movimentações, ocorrências e usuários.
 12. **Usuários:** só o admin cria usuários, pela edge function `usuarios`. São no máximo 2 a 3 vendedores ao mesmo tempo.
 
@@ -41,3 +41,9 @@ PWA mobile de controle de estoque de peças de celular (telas, tampas, conectore
 
 ## Commits
 Mensagens em português, descrevendo o que mudou para o usuário.
+
+## Segurança (não desfazer)
+- Papel e acesso vêm do `app_metadata` (só a edge function `usuarios` grava). Usuário criado por outro caminho nasce vendedor inativo.
+- `anon` não tem acesso a nada em `public`. Tabelas de histórico e estoque não têm INSERT/UPDATE/DELETE para `authenticated`; tudo passa pelas funções.
+- O custo (`variacoes.custo`, `venda_itens.custo_unitario`) não é legível pelo `authenticated`: o admin lê por `custos_variacoes` e grava produto por `salvar_produto`. Nunca usar `select('*')` em `variacoes`.
+- CSP em `public/_headers`; a auditoria aplica a mesma CSP e acusa bloqueios (`CSP` na saída).

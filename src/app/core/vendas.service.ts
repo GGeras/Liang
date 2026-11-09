@@ -38,6 +38,14 @@ export function motivoRecusa(r: RespostaRpc): string {
       return 'Adicione ao menos um item.';
     case 'usuario_inativo':
       return 'Seu acesso está desativado.';
+    case 'cliente_invalido':
+      return 'Nome do cliente muito longo (máx. 120 caracteres).';
+    case 'itens_demais':
+      return 'Venda com itens demais (máx. 100).';
+    case 'item_invalido':
+      return 'Item com quantidade inválida.';
+    case 'id_em_uso':
+      return 'Identificador de venda já usado. Refaça a venda.';
     default:
       return r.erro ?? 'Erro desconhecido.';
   }

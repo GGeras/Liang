@@ -86,7 +86,9 @@ export class Toast {
 /** Gera CSV que o Excel em português abre direto (separador ; e BOM). */
 export function baixarCsv(nome: string, linhas: (string | number | null | undefined)[][]) {
   const esc = (v: string | number | null | undefined) => {
-    const s = typeof v === 'number' ? String(v).replace('.', ',') : (v ?? '');
+    let s = typeof v === 'number' ? String(v).replace('.', ',') : (v ?? '');
+    // Injeção de fórmula: um nome de cliente como "=HIPERLINK(...)" viraria fórmula no Excel
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const csv = '﻿' + linhas.map((l) => l.map(esc).join(';')).join('\r\n');
