@@ -120,6 +120,8 @@ const telas = PAPEL === 'admin'
       );
     }
   };
+  await p.goto('http://localhost:4301/instalar'); await p.waitForTimeout(500);
+  await checar('instalar'); await p.screenshot({ path: `${OUT}/00-instalar.png` });
   for (const t of telas) {
     await p.goto('http://localhost:4301' + t); await p.waitForTimeout(700);
     const nome = t.replace(/\//g, '_').replace(/^_/, '');

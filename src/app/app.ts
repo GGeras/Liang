@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Toast } from './shared/ui';
 import { AtualizacaoService } from './core/atualizacao.service';
+import { InstalacaoService } from './core/instalacao.service';
 
 @Component({
   selector: 'app-root',
@@ -31,4 +32,6 @@ export class App {
   protected toast = inject(Toast);
   // Liga a atualização automática do PWA desde a abertura (inclusive na tela de entrar)
   private atualizacao = inject(AtualizacaoService);
+  // Guarda o pedido de instalação do navegador desde a abertura (usado em /instalar)
+  private instalacao = inject(InstalacaoService);
 }
