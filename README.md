@@ -5,7 +5,7 @@ PWA mobile para controle de estoque de peças de celular (telas, tampas, conecto
 ## Stack
 - **Front:** Angular 20 (standalone, signals, zoneless) como PWA instalável
 - **Banco/Auth/Fotos:** Supabase (projeto `Liang`, região São Paulo)
-- **Hospedagem:** Cloudflare Pages
+- **Hospedagem:** Cloudflare Workers (static assets) · https://liang.jg8598917.workers.dev
 
 ## Regras principais
 | Regra | Onde é garantida |
@@ -44,14 +44,15 @@ npm start          # http://localhost:4200
 npm run build      # saída em dist/liang/browser
 ```
 
-## Deploy no Cloudflare Pages
-1. Cloudflare → Workers & Pages → Create → Pages → Connect to Git → `GGeras/Liang`
-2. Project name: `liang`
-3. Build command: `npm run build`
-4. Build output directory: `dist/liang/browser`
-5. Environment variable: `NODE_VERSION = 22`
+## Deploy no Cloudflare (Workers)
+Worker `liang` ligado ao GitHub (Workers & Pages › liang › Settings › Build):
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy` (branch `main`); outras branches geram link de prévia
+- Root directory: `/`
 
-`public/_redirects` já trata as rotas do app e `public/_headers` evita cache do service worker.
+A configuração fica em `wrangler.jsonc`: pasta `dist/liang/browser` e modo SPA (as rotas do app devolvem o `index.html`).
+`public/_headers` traz a CSP, os cabeçalhos de segurança e evita cache do service worker.
+Endereço: https://liang.jg8598917.workers.dev
 
 ## Primeiro administrador
 Crie o usuário em Supabase → Authentication → Add user (marque *Auto Confirm*), depois rode no SQL Editor:
