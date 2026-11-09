@@ -218,6 +218,8 @@ function intervalo(p: Periodo): [Date, Date] {
     .ranking { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
     .ranking li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .6rem; align-items: start; }
     .ranking app-ident { margin-top: .1rem; }
+    /* código de barras no ranking: menor, para sobrar espaço para o nome em 320px */
+    .ranking .barras-id { font-size: .68rem; padding-inline: .3em; }
     .ranking .nome { min-width: 0; display: grid; line-height: 1.3; }
     .ranking .qtd-r, .ranking .selo { margin-top: .1rem; }
     .titulo-acao { display: flex; justify-content: space-between; align-items: baseline; }

@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { CatalogoService, ConexaoService } from '../core/catalogo.service';
 import { VendasService } from '../core/vendas.service';
+import { AtualizacaoService } from '../core/atualizacao.service';
 import { Icone } from '../shared/ui';
 
 interface Aba {
@@ -29,6 +30,15 @@ interface Aba {
       </div>
     }
 
+    @if (atualizacao.disponivel()) {
+      <!-- Só aparece quando a troca automática está esperando (ex.: venda em andamento) -->
+      <div class="faixa nova-versao" role="status">
+        <i-con nome="baixar" />
+        <span>Nova versão disponível. Termine o que está fazendo e atualize.</span>
+        <button type="button" class="btn sec pequeno" (click)="atualizacao.atualizar()">Atualizar</button>
+      </div>
+    }
+
     <router-outlet />
 
     <nav class="abas" aria-label="Navegação principal">
@@ -47,7 +57,9 @@ interface Aba {
       background: var(--ink); color: #fff; font-size: .88rem; font-weight: 600;
     }
     .faixa.off { background: var(--warn); }
-    .faixa span { flex: 1; }
+    .faixa span { flex: 1; min-width: 0; }
+    .faixa.nova-versao { background: var(--cobalt); flex-wrap: wrap; }
+    .faixa.nova-versao .btn { flex: none; }
     .abas {
       position: fixed; z-index: 30; left: 0; right: 0; bottom: 0;
       display: flex; justify-content: space-around;
@@ -68,6 +80,7 @@ export class Shell {
   protected conexao = inject(ConexaoService);
   protected vendas = inject(VendasService);
   private catalogo = inject(CatalogoService);
+  protected atualizacao = inject(AtualizacaoService);
 
   protected abas = computed<Aba[]>(() =>
     this.auth.isAdmin()
