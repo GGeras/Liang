@@ -6,8 +6,14 @@ const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 const W = +process.argv[2] || 360, OUT = process.argv[3] || path.join(__dirname, '..', '.auditoria', String(+process.argv[2] || 360)), PAPEL = process.argv[4] || 'admin';
 fs.mkdirSync(OUT, { recursive: true });
+// Modo acessibilidade (ferramentas/acessibilidade.js): roda o @accesslint/core em cada tela e folha.
+const A11Y = process.env.LIANG_A11Y === '1';
+const acesso = {};
 const root = path.join(__dirname, '..', 'dist', 'liang', 'browser');
+// Mesma CSP do Cloudflare Pages (public/_headers): qualquer bloqueio aparece como "CSP" na saída
+const CSP = (fs.readFileSync(path.join(__dirname, '..', 'public', '_headers'), 'utf8').match(/Content-Security-Policy:\s*(.+)/) || [])[1];
 const srv = http.createServer((q, r) => {
+  if (CSP) r.setHeader('Content-Security-Policy', CSP);
   let f = path.join(root, decodeURIComponent(q.url.split('?')[0]));
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) f = path.join(root, 'index.html');
   r.setHeader('Content-Type', { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html' }[path.extname(f)] || 'application/octet-stream');
@@ -68,11 +74,13 @@ const telas = PAPEL === 'admin'
   : ['/vender', '/catalogo', '/minhas-vendas'];
 (async () => {
   const b = await chromium.launch();
-  const ctx = await b.newContext({ viewport: { width: W, height: 760 }, deviceScaleFactor: 1 });
+  // No modo acessibilidade o AccessLint é injetado como script: a CSP o bloquearia
+  const ctx = await b.newContext({ viewport: { width: W, height: 760 }, deviceScaleFactor: 1, bypassCSP: A11Y });
   await ctx.route('**/*supabase.co/**', (rt) => rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(resp(rt.request().url(), rt.request().headers()['accept'] || '')) }));
   await ctx.route('**/fonts.googleapis.com/**', (rt) => rt.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   const p = await ctx.newPage();
   p.on('pageerror', (e) => console.log('ERRO JS', e.message));
+  p.on('console', (m) => { if (/Content Security Policy|Refused to/i.test(m.text())) console.log('CSP', m.text().slice(0, 200)); });
   await p.goto('http://localhost:4301/entrar'); await p.waitForTimeout(500);
   await p.screenshot({ path: `${OUT}/00-entrar.png` });
   await p.evaluate((uid) => localStorage.setItem('liang-auth', JSON.stringify({ access_token: 'x', refresh_token: 'y', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800, user: { id: uid, email: 'a@a.com', aud: 'authenticated', role: 'authenticated' } })), uid);
@@ -90,6 +98,13 @@ const telas = PAPEL === 'admin'
       if (document.documentElement.scrollWidth > W) out.push(`PAGINA scrollWidth=${document.documentElement.scrollWidth}`);
       return [...new Set(out)];
     }, W);
+    if (A11Y) {
+      await p.waitForTimeout(350); // espera a animação da folha terminar (opacidade parcial distorce o contraste)
+      if (!(await p.evaluate(() => 'AccessLint' in window))) await p.addScriptTag({ path: require.resolve('@accesslint/core/iife') });
+      acesso[nome] = await p.evaluate(() =>
+        AccessLint.runAudit(document).violations.map((v) => ({ regra: v.ruleId, impacto: v.impact, seletor: v.selector, msg: v.message, html: v.html.slice(0, 160) })),
+      );
+    }
   };
   for (const t of telas) {
     await p.goto('http://localhost:4301' + t); await p.waitForTimeout(700);
@@ -120,6 +135,10 @@ const telas = PAPEL === 'admin'
     await checar('folha-catalogo'); await p.screenshot({ path: `${OUT}/folha-catalogo.png` });
   }
   fs.writeFileSync(`${OUT}/relatorio.json`, JSON.stringify(relatorio, null, 1));
+  if (A11Y) {
+    fs.writeFileSync(`${OUT}/acessibilidade.json`, JSON.stringify(acesso, null, 1));
+    for (const [k, v] of Object.entries(acesso)) if (v.length) console.log('## a11y', k, '\n  ' + v.map((x) => `[${x.impacto}] ${x.regra} · ${x.seletor} · ${x.msg}`).join('\n  '));
+  }
   for (const [k, v] of Object.entries(relatorio)) if (v.length) console.log('##', k, '\n  ' + v.join('\n  '));
   await b.close(); srv.close();
 })();

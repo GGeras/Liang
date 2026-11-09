@@ -144,7 +144,7 @@ interface Compat {
                 </button>
                 <button class="btn-icone" (click)="removerCompat(idx)" [attr.aria-label]="'Remover ' + c.modelo"><i-con nome="apagar" /></button>
               </div>
-              <input class="input obs" [(ngModel)]="c.observacao" placeholder="Observação (opcional)" />
+              <input class="input obs" [(ngModel)]="c.observacao" placeholder="Observação (opcional)" [attr.aria-label]="'Observação sobre ' + c.modelo" />
             </li>
           } @empty {
             <li class="muted small">Nenhuma compatibilidade anotada.</li>
@@ -188,7 +188,7 @@ interface Compat {
     .ativo input { width: 20px; height: 20px; accent-color: var(--cobalt); }
     .titulo-acao { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; }
     .variacao { border: 1.5px solid var(--line); border-radius: var(--r-md); padding: .9rem; margin: 0; display: grid; gap: .75rem; }
-    .variacao.inativa { opacity: .6; }
+    .variacao.inativa { border-style: dashed; background: var(--paper); }
     .rodape-var { display: flex; justify-content: space-between; align-items: center; }
     .compat { list-style: none; padding: 0; margin: 0; display: grid; gap: .8rem; }
     .compat-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; align-items: center; }
@@ -263,10 +263,15 @@ export class ProdutoForm {
     if (!id) return;
     const { data, error } = await supabase
       .from('produtos')
-      .select('*, variacoes(*), compatibilidades(*)')
+      .select('*, variacoes(id, nome, preco_atacado, preco_varejo, codigo_barras, estoque_minimo, ativo), compatibilidades(*)')
       .eq('id', id)
       .single();
     if (error) return this.erro.set(mensagemErro(error));
+    // Custo não é legível pela tabela (só admin, por função)
+    const custos = await supabase.rpc('custos_variacoes', { p_produto: id });
+    if (custos.error) return this.erro.set(mensagemErro(custos.error));
+    const custoDe = new Map(((custos.data ?? []) as { variacao_id: string; custo: number | null }[]).map((c) => [c.variacao_id, c.custo]));
+    for (const v of data.variacoes as Variacao[]) v.custo = custoDe.get(v.id) ?? null;
     this.produtoId.set(data.id);
     this.tipoId.set(data.tipo_id);
     this.seq.set(data.seq);
@@ -368,23 +373,21 @@ export class ProdutoForm {
     const vazio = (s: string) => s.trim() || null;
     const num = (v: unknown) => (v === null || v === '' || v === undefined ? null : Number(v));
     try {
-      const p = await supabase.from('produtos').upsert({
-        id: this.produtoId(),
-        tipo_id: this.tipoId(),
-        seq: Number(this.seq()),
-        nome: this.nome().trim(),
-        marca: vazio(this.marca()),
-        modelo: vazio(this.modelo()),
-        descricao: vazio(this.descricao()),
-        foto_url: this.fotoUrl(),
-        ativo: this.ativo(),
-      });
-      if (p.error) throw p.error;
-
-      const v = await supabase.from('variacoes').upsert(
-        this.variacoes().map((x) => ({
+      // Uma transação só no servidor: ou salva produto, variações e compatibilidades, ou nada
+      const { error } = await supabase.rpc('salvar_produto', {
+        p_produto: {
+          id: this.produtoId(),
+          tipo_id: this.tipoId(),
+          seq: Number(this.seq()),
+          nome: this.nome().trim(),
+          marca: vazio(this.marca()),
+          modelo: vazio(this.modelo()),
+          descricao: vazio(this.descricao()),
+          foto_url: this.fotoUrl(),
+          ativo: this.ativo(),
+        },
+        p_variacoes: this.variacoes().map((x) => ({
           id: x.id,
-          produto_id: this.produtoId(),
           nome: x.nome.trim(),
           preco_atacado: num(x.preco_atacado),
           preco_varejo: num(x.preco_varejo),
@@ -393,27 +396,16 @@ export class ProdutoForm {
           estoque_minimo: num(x.estoque_minimo) ?? 0,
           ativo: x.ativo,
         })),
-      );
-      if (v.error) throw v.error;
-
-      if (this.compatRemovidas.length) {
-        const d = await supabase.from('compatibilidades').delete().in('id', this.compatRemovidas);
-        if (d.error) throw d.error;
-        this.compatRemovidas = [];
-      }
-      if (this.compat().length) {
-        const c = await supabase.from('compatibilidades').upsert(
-          this.compat().map((x) => ({
-            id: x.id,
-            produto_id: this.produtoId(),
-            modelo: x.modelo,
-            status: x.status,
-            observacao: x.observacao?.trim() || null,
-            ...(x.nova ? { criado_por: this.auth.perfil()?.id } : {}),
-          })),
-        );
-        if (c.error) throw c.error;
-      }
+        p_compat: this.compat().map((x) => ({
+          id: x.id,
+          modelo: x.modelo,
+          status: x.status,
+          observacao: x.observacao?.trim() || null,
+        })),
+        p_compat_remover: this.compatRemovidas,
+      });
+      if (error) throw error;
+      this.compatRemovidas = [];
 
       this.toast.mostrar(`Produto ${this.codigo()} salvo`, 'ok');
       await this.catalogo.atualizar();

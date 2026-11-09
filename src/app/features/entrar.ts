@@ -24,8 +24,8 @@ import { mensagemErro } from '../core/supabase';
           <span>Senha</span>
           <input type="password" name="senha" [(ngModel)]="senha" autocomplete="current-password" required />
         </label>
-        @if (erro()) {
-          <p class="erro-msg">{{ erro() }}</p>
+        @if (erro() || auth.aviso()) {
+          <p class="erro-msg" role="alert">{{ erro() || auth.aviso() }}</p>
         }
         <button class="btn bloco" type="submit" [disabled]="carregando() || !email() || !senha()">
           {{ carregando() ? 'Entrando…' : 'Entrar' }}
@@ -44,7 +44,7 @@ import { mensagemErro } from '../core/supabase';
   `,
 })
 export class Entrar {
-  private auth = inject(AuthService);
+  protected auth = inject(AuthService);
   private router = inject(Router);
   email = signal('');
   senha = signal('');
@@ -53,6 +53,7 @@ export class Entrar {
 
   async entrar() {
     this.erro.set('');
+    this.auth.aviso.set('');
     this.carregando.set(true);
     try {
       await this.auth.entrar(this.email().trim(), this.senha());

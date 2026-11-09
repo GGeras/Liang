@@ -45,11 +45,15 @@ export interface VendaPendente {
   itens: { variacao_id: string; quantidade: number; codigo: string; nome: string }[];
   total_previsto: number;
   criada_em: string;
+  /** Último erro técnico ao enviar (a venda continua na fila e é reenviada). */
+  ultimo_erro?: string;
 }
 
 /** Aviso para o vendedor: venda offline recusada ao sincronizar. */
 export interface AvisoVenda {
   id: string;
+  /** Dono do aviso (o aparelho pode ser usado por mais de um vendedor). */
+  vendedor_id?: string;
   cliente: string;
   criada_em: string;
   motivo: string;

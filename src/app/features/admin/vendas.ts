@@ -64,7 +64,7 @@ import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
       }
     </main>
 
-    <dialog #dlg class="folha">
+    <dialog #dlg class="folha" aria-label="Cancelar venda">
       @if (sel(); as v) {
         <div class="topo-folha">
           <h2>Cancelar venda</h2>
@@ -88,7 +88,7 @@ import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
   styles: `
     .filtros { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: .5rem; }
     .venda { display: grid; gap: .3rem; padding: .85rem 1rem; }
-    .venda.cancelada { opacity: .7; }
+    .venda.cancelada .topo .num { text-decoration: line-through; color: var(--muted); }
     .topo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: start; }
     .itens { margin: .2rem 0 0; padding: 0; list-style: none; font-size: .88rem; display: grid; gap: .2rem; }
     .itens li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .4rem; }

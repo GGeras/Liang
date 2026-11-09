@@ -44,7 +44,7 @@ export class Mais {
   ];
 
   async sair() {
-    if (this.vendas.fila().length) {
+    if (this.vendas.minhaFila().length) {
       this.toast.mostrar('Há vendas guardadas sem envio. Conecte à internet antes de sair.', 'erro', 5000);
       return;
     }

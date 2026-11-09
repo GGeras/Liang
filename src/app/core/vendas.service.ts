@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { supabase } from './supabase';
 import { AuthService } from './auth.service';
 import { CatalogoService } from './catalogo.service';
@@ -38,6 +38,14 @@ export function motivoRecusa(r: RespostaRpc): string {
       return 'Adicione ao menos um item.';
     case 'usuario_inativo':
       return 'Seu acesso está desativado.';
+    case 'cliente_invalido':
+      return 'Nome do cliente muito longo (máx. 120 caracteres).';
+    case 'itens_demais':
+      return 'Venda com itens demais (máx. 100).';
+    case 'item_invalido':
+      return 'Item com quantidade inválida.';
+    case 'id_em_uso':
+      return 'Identificador de venda já usado. Refaça a venda.';
     default:
       return r.erro ?? 'Erro desconhecido.';
   }
@@ -48,8 +56,14 @@ export class VendasService {
   private auth = inject(AuthService);
   private catalogo = inject(CatalogoService);
 
+  /** Fila do aparelho inteiro (pode ter vendas de outro vendedor que usou o mesmo celular). */
   readonly fila = signal<VendaPendente[]>([]);
   readonly avisos = signal<AvisoVenda[]>([]);
+  /** Só as vendas e avisos de quem está logado. */
+  readonly minhaFila = computed(() => this.fila().filter((v) => v.vendedor_id === this.auth.perfil()?.id));
+  readonly meusAvisos = computed(() =>
+    this.avisos().filter((a) => !a.vendedor_id || a.vendedor_id === this.auth.perfil()?.id),
+  );
   readonly sincronizando = signal(false);
   private iniciado = false;
 
@@ -121,23 +135,29 @@ export class VendasService {
     return data as RespostaRpc;
   }
 
-  /** Envia a fila em ordem. O servidor decide: quem chega primeiro leva o estoque. */
+  /**
+   * Envia a fila em ordem. O servidor decide: quem chega primeiro leva o estoque.
+   * A venda só sai da fila quando o servidor RESPONDEU (registrou ou recusou).
+   * Erro técnico (sessão vencida, servidor fora, timeout) mantém a venda na fila
+   * para nova tentativa — nunca se perde uma venda feita no balcão.
+   */
   async sincronizar() {
     const perfil = this.auth.perfil();
-    if (!perfil || !navigator.onLine || this.sincronizando() || this.fila().length === 0) return;
+    if (!perfil || !navigator.onLine || this.sincronizando() || this.minhaFila().length === 0) return;
     this.sincronizando.set(true);
     try {
-      for (const v of [...this.fila()]) {
-        if (v.vendedor_id !== perfil.id) continue;
+      for (const v of [...this.minhaFila()]) {
         let r: RespostaRpc;
         try {
           r = await this.enviar(v, true);
         } catch (e) {
           if (erroDeRede(e)) break;
-          r = { ok: false, erro: (e as Error).message };
+          const msg = (e as Error).message || 'Erro ao enviar';
+          await this.guardarFila(this.fila().map((x) => (x.id === v.id ? { ...x, ultimo_erro: msg } : x)));
+          continue;
         }
         if (!r.ok) {
-          const aviso: AvisoVenda = { id: v.id, cliente: v.cliente, criada_em: v.criada_em, motivo: motivoRecusa(r) };
+          const aviso: AvisoVenda = { id: v.id, vendedor_id: v.vendedor_id, cliente: v.cliente, criada_em: v.criada_em, motivo: motivoRecusa(r) };
           this.avisos.update((a) => [aviso, ...a]);
           await salvar('avisos', this.avisos());
         }

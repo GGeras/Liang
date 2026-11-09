@@ -73,7 +73,7 @@ interface Grupo {
       </ul>
     </main>
 
-    <dialog #dlg class="folha">
+    <dialog #dlg class="folha" aria-label="Detalhes do produto">
       @if (sel(); as g) {
         <div class="topo">
           <span class="etiqueta">{{ g.codigo }}</span>
@@ -120,7 +120,8 @@ interface Grupo {
     .preco { display: grid; font-size: .98rem; font-weight: 700; line-height: 1.25; margin-top: .2rem; }
     .vars li .preco:last-child { justify-items: end; }
     .preco .rot { font-size: .75rem; font-weight: 600; color: var(--muted); }
-    .vars li.zerado { opacity: .55; }
+    /* Sem estoque: fundo vazado e texto cinza (sem opacity, para manter o contraste AA) */
+    .vars li.zerado { background: none; box-shadow: inset 0 0 0 1.5px var(--line); color: var(--muted); }
     .vars li.zerado .est { color: var(--danger); }
     .topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
     .foto { width: 100%; max-height: 240px; object-fit: contain; background: var(--paper); border-radius: var(--r-md); margin-bottom: .75rem; }

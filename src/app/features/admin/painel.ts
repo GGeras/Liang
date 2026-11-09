@@ -103,12 +103,12 @@ function intervalo(p: Periodo): [Date, Date] {
         @if (r.por_dia.length > 1) {
           <section class="painel">
             <h2>Faturamento por dia</h2>
-            <div class="grafico" role="img" [attr.aria-label]="'Faturamento diário, máximo ' + (maxDia() | brl)">
+            <div class="grafico" role="group" [attr.aria-label]="'Faturamento diário, máximo ' + (maxDia() | brl)">
               @for (d of r.por_dia; track d.dia) {
-                <div class="col" tabindex="0" [attr.aria-label]="rotuloDia(d.dia) + ': ' + (d.total | brl) + ', ' + d.vendas + ' vendas'">
-                  <div class="barra" [style.height.%]="(d.total / maxDia()) * 100"></div>
-                  <span class="dica"><strong>{{ d.total | brl }}</strong><br />{{ rotuloDia(d.dia) }} · {{ d.vendas }} venda(s)</span>
-                </div>
+                <button type="button" class="col" [attr.aria-label]="rotuloDia(d.dia) + ': ' + (d.total | brl) + ', ' + d.vendas + ' vendas'">
+                  <span class="barra" [style.height.%]="(d.total / maxDia()) * 100"></span>
+                  <span class="dica" aria-hidden="true"><strong>{{ d.total | brl }}</strong><br />{{ rotuloDia(d.dia) }} · {{ d.vendas }} venda(s)</span>
+                </button>
               }
             </div>
             <div class="eixo muted small"><span>{{ rotuloDia(r.por_dia[0].dia) }}</span><span>{{ rotuloDia(r.por_dia[r.por_dia.length - 1].dia) }}</span></div>
@@ -197,11 +197,13 @@ function intervalo(p: Periodo): [Date, Date] {
 
     h2 { margin-bottom: .75rem; }
     .grafico { display: flex; align-items: flex-end; gap: 2px; height: 140px; border-bottom: 1px solid var(--line); }
-    .col { flex: 1; height: 100%; display: flex; align-items: flex-end; position: relative; outline: none; }
-    .barra { width: 100%; min-height: 2px; background: var(--cobalt); border-radius: 4px 4px 0 0; }
-    .col:hover .barra, .col:focus .barra { background: var(--cobalt-press); }
+    .col { flex: 1; min-width: 0; height: 100%; display: flex; align-items: flex-end; position: relative; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: default; }
+    .barra { display: block; width: 100%; min-height: 2px; background: var(--cobalt); border-radius: 4px 4px 0 0; }
+    .col:hover .barra, .col:focus-visible .barra { background: var(--cobalt-press); }
+    .col:focus-visible { outline-offset: 0; }
     .dica { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 3; white-space: nowrap; background: var(--ink); color: #fff; padding: .4rem .6rem; border-radius: 6px; font-size: .78rem; pointer-events: none; }
     .col:hover .dica, .col:focus .dica { display: block; }
+    .titulo-acao a { display: inline-flex; align-items: center; min-height: 44px; padding-inline: .5rem; margin-right: -.5rem; }
     .col:first-child .dica { left: 0; transform: none; }
     .col:last-child .dica { left: auto; right: 0; transform: none; }
     .eixo { display: flex; justify-content: space-between; margin-top: .3rem; }

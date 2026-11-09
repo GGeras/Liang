@@ -7,9 +7,12 @@ import { Toast } from './shared/ui';
   imports: [RouterOutlet],
   template: `
     <router-outlet />
-    @if (toast.atual(); as t) {
-      <div class="toast" [class]="t.tipo" role="status" aria-live="polite">{{ t.texto }}</div>
-    }
+    <!-- A região viva fica sempre na página; só o texto muda (leitores de tela anunciam) -->
+    <div role="status" aria-live="polite" aria-atomic="true">
+      @if (toast.atual(); as t) {
+        <div class="toast" [class]="t.tipo">{{ t.texto }}</div>
+      }
+    </div>
   `,
   styles: `
     .toast {

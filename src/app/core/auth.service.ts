@@ -7,6 +7,8 @@ import { ler, salvar, apagar } from './cofre';
 export class AuthService {
   readonly perfil = signal<Perfil | null>(null);
   readonly isAdmin = computed(() => this.perfil()?.papel === 'admin');
+  /** Motivo de ter voltado para a tela de entrar (acesso desativado, sessão vencida). */
+  readonly aviso = signal('');
   private pronto: Promise<void>;
 
   constructor() {
@@ -27,7 +29,12 @@ export class AuthService {
     // Sem internet: usa o perfil guardado no aparelho
     const cache = await ler<Perfil | null>('perfil', null);
     if (cache?.id === data.session.user.id) this.perfil.set(cache);
-    await this.atualizarPerfil(data.session.user.id);
+    try {
+      await this.atualizarPerfil(data.session.user.id);
+    } catch (e) {
+      // Não deixa a inicialização falhar: os guards mandam para /entrar com o aviso
+      this.aviso.set((e as Error).message);
+    }
   }
 
   private async atualizarPerfil(id: string) {
@@ -36,6 +43,12 @@ export class AuthService {
       .select('id, nome, papel, ativo')
       .eq('id', id)
       .single();
+    // Sessão recusada pelo servidor (token revogado/vencido sem renovação): sair de verdade.
+    // Sem internet o erro é de rede e o perfil do cache continua valendo.
+    if (error && /JWT|PGRST30[0-3]|401/i.test(`${error.code} ${error.message}`)) {
+      await this.sair();
+      throw new Error('Sua sessão expirou. Entre novamente.');
+    }
     if (error || !data) return;
     if (!data.ativo) {
       await this.sair();

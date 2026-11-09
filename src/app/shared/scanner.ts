@@ -12,9 +12,9 @@ declare class BarcodeDetector {
   selector: 'app-scanner',
   imports: [Icone],
   template: `
-    <dialog #dlg class="folha scanner" (close)="parar()">
+    <dialog #dlg class="folha scanner" (close)="parar()" aria-labelledby="scanner-titulo">
       <div class="topo">
-        <h2>Ler código de barras</h2>
+        <h2 id="scanner-titulo">Ler código de barras</h2>
         <button class="btn-icone" (click)="fechar()" aria-label="Fechar"><i-con nome="fechar" /></button>
       </div>
       @if (erro()) {
