@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { adminGuard, deslogadoGuard, logadoGuard } from './core/guards';
 
 export const routes: Routes = [
+  // Pública: link para mandar aos vendedores instalarem o app
+  { path: 'instalar', loadComponent: () => import('./features/instalar').then((m) => m.Instalar) },
   { path: 'entrar', canActivate: [deslogadoGuard], loadComponent: () => import('./features/entrar').then((m) => m.Entrar) },
   {
     path: '',
