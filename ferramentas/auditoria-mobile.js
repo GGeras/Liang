@@ -122,12 +122,12 @@ const telas = PAPEL === 'admin'
   }
   // fluxos com folhas
   await p.goto('http://localhost:4301/vender'); await p.waitForTimeout(600);
-  await p.fill('#codigo', '0101'); await p.waitForTimeout(300);
+  await p.fill('#codigo', '0101'); await p.waitForTimeout(450);
   await checar('folha-variacao'); await p.screenshot({ path: `${OUT}/folha-variacao.png` });
   await p.click('dialog[open] .opcao >> nth=1'); await p.waitForTimeout(200);
-  await p.fill('#codigo', '0102'); await p.waitForTimeout(200);
-  await p.fill('#codigo', '0201'); await p.waitForTimeout(200);
-  await p.fill('#codigo', '9999'); await p.waitForTimeout(200);
+  await p.fill('#codigo', '0102'); await p.waitForTimeout(450);
+  await p.fill('#codigo', '0201'); await p.waitForTimeout(450);
+  await p.fill('#codigo', '9999'); await p.waitForTimeout(450);
   await checar('vender-carrinho'); await p.screenshot({ path: `${OUT}/vender-carrinho.png`, fullPage: true });
   await p.click('text=Atacado'); await p.click('text=Finalizar venda');
   await p.fill('dialog[open] input', 'Assistência Técnica Cell Center Uberlândia Ltda');
@@ -141,6 +141,35 @@ const telas = PAPEL === 'admin'
     await p.goto('http://localhost:4301/catalogo'); await p.waitForTimeout(600);
     await p.click('.produto >> nth=1'); await p.waitForTimeout(200);
     await checar('folha-catalogo'); await p.screenshot({ path: `${OUT}/folha-catalogo.png` });
+  }
+  // Código de barras desconhecido (leitor USB digita e dá Enter): admin ganha o atalho de cadastro
+  await p.goto('http://localhost:4301/vender'); await p.waitForTimeout(600);
+  // Leitor de código de barras: digita número a número, rápido, e dá Enter.
+  // Código cadastrado (7891234567890 = 03-01) entra no carrinho sem acusar "78-91" no meio
+  // falhar() vibra [40,40,40]; adicionar() vibra 30. Uma leitura limpa só pode vibrar 30.
+  await p.evaluate(() => { window.__vib = []; navigator.vibrate = (x) => (window.__vib.push(x), true); });
+  // Pessoa digitando o 00-00 tecla a tecla (o campo põe o hífen sozinho): entra no carrinho sem Enter
+  await p.locator('#codigo').pressSequentially('0201', { delay: 90 }); await p.waitForTimeout(450);
+  const humano = await p.locator('.carrinho .etiqueta', { hasText: '02-01' }).count();
+  if (!humano) console.log('CODIGO digitando 0201 devagar não adicionou 02-01 ao carrinho');
+  await p.evaluate(() => { window.__vib = []; });
+  await p.locator('#codigo').pressSequentially('7891234567890', { delay: 8 }); await p.press('#codigo', 'Enter'); await p.waitForTimeout(400);
+  const vib = await p.evaluate(() => JSON.stringify(window.__vib));
+  const noCarrinho = await p.locator('.carrinho .etiqueta', { hasText: '03-01' }).count();
+  if (!noCarrinho || vib !== '[30]') console.log('BARRAS leitor: 03-01 no carrinho =', noCarrinho, '· vibrações =', vib, '(esperado [30])');
+  await p.locator('#codigo').pressSequentially('7890000000001', { delay: 8 }); await p.press('#codigo', 'Enter'); await p.waitForTimeout(400);
+  const atalho = await p.locator('a.cadastrar').count();
+  if (atalho !== (PAPEL === 'admin' ? 1 : 0)) console.log('BARRAS atalho de cadastro em Vender:', atalho, 'para', PAPEL);
+  await checar('vender-barras-novo'); await p.screenshot({ path: `${OUT}/vender-barras-novo.png` });
+  if (PAPEL === 'admin') {
+    await p.click('a.cadastrar'); await p.waitForTimeout(800);
+    const preenchido = await p.locator('.cb-linha input').first().inputValue();
+    if (!p.url().includes('/admin/produtos/novo') || preenchido !== '7890000000001') console.log('BARRAS cadastro não veio preenchido:', p.url(), preenchido);
+    await checar('produto-novo-barras'); await p.screenshot({ path: `${OUT}/produto-novo-barras.png`, fullPage: true });
+    // Código que já existe em outra variação não é aceito
+    await p.goto('http://localhost:4301/admin/produtos/novo?barras=7891234567890'); await p.waitForTimeout(800);
+    const repetido = await p.locator('.cb-linha input').first().inputValue();
+    if (repetido) console.log('BARRAS código repetido foi aceito no cadastro:', repetido);
   }
   fs.writeFileSync(`${OUT}/relatorio.json`, JSON.stringify(relatorio, null, 1));
   if (A11Y) {

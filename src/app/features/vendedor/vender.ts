@@ -1,5 +1,6 @@
 import { Component, ElementRef, Injectable, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { CatalogoService, normalizarCodigo } from '../../core/catalogo.service';
 import { VendasService } from '../../core/vendas.service';
 import { AuthService } from '../../core/auth.service';
@@ -58,7 +59,7 @@ export class CarrinhoService {
 
 @Component({
   selector: 'app-vender',
-  imports: [FormsModule, BrlPipe, Icone, Scanner],
+  imports: [FormsModule, RouterLink, BrlPipe, Icone, Scanner],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -98,7 +99,12 @@ export class CarrinhoService {
           />
           <button class="btn-icone acao" (click)="scanner.abrir()" aria-label="Ler com a câmera"><i-con nome="scan" /></button>
         </div>
-        <p class="dica small" aria-live="polite">{{ erroCodigo() || 'Digite os 4 números. O produto entra no carrinho na hora.' }}</p>
+        <p class="dica small" aria-live="polite">{{ erroCodigo() || 'Leia o código de barras ou digite os 4 números do código. O produto entra no carrinho na hora.' }}</p>
+        @if (auth.isAdmin() && barrasNovo()) {
+          <a class="btn sec cadastrar" [routerLink]="['/admin/produtos/novo']" [queryParams]="{ barras: barrasNovo() }">
+            <i-con nome="mais1" /> Cadastrar produto com este código
+          </a>
+        }
       </section>
 
       <section class="carrinho" aria-label="Itens da venda">
@@ -238,6 +244,7 @@ export class CarrinhoService {
     .acao i-con { transform: scale(1.3); }
     .dica { color: #b9c2cf; min-height: 1.3em; }
     .leitor.erro .dica { color: #ffb4b4; font-weight: 650; }
+    .cadastrar { justify-self: stretch; white-space: normal; text-align: center; line-height: 1.2; padding-block: .5rem; }
     .leitor.erro .codigo { animation: tremer .25s; }
     @keyframes tremer { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 
@@ -294,6 +301,9 @@ export class Vender {
 
   protected entrada = signal('');
   protected erroCodigo = signal('');
+  /** Código de barras lido que não está no catálogo (atalho de cadastro para o admin). */
+  protected barrasNovo = signal('');
+  private esperaCodigo?: ReturnType<typeof setTimeout>;
   protected opcoes = signal<ItemCatalogo[]>([]);
   protected confirmando = signal(false);
   protected enviando = signal(false);
@@ -329,18 +339,29 @@ export class Vender {
 
   protected digitar(v: string) {
     this.erroCodigo.set('');
+    this.barrasNovo.set('');
+    clearTimeout(this.esperaCodigo);
     const so = v.replace(/[^\d-]/g, '');
-    // Até 4 dígitos: formata como 00-00 enquanto digita
     const digitos = so.replace(/-/g, '');
-    if (digitos.length <= 4 && !so.includes('-')) {
+    // Até 4 dígitos é código 00-00 (com ou sem o hífen que o próprio campo coloca): formata enquanto digita
+    if (digitos.length <= 4 && /^\d{0,2}-?\d{0,2}$/.test(so)) {
       this.entrada.set(digitos.length > 2 ? `${digitos.slice(0, 2)}-${digitos.slice(2)}` : digitos);
-      if (digitos.length === 4) this.buscarCodigo(this.entrada());
+      // Leitor de código de barras "digita" os 13 números em milissegundos: só busca o 00-00
+      // se ninguém continuar digitando logo depois do 4º número (pessoa digita bem mais devagar)
+      if (digitos.length === 4) {
+        const alvo = this.entrada();
+        this.esperaCodigo = setTimeout(() => {
+          if (this.entrada() === alvo) this.buscarCodigo(alvo);
+        }, 250);
+      }
     } else {
-      this.entrada.set(so);
+      // Mais de 4 dígitos: é código de barras; mostra só os números, sem o hífen do 00-00
+      this.entrada.set(digitos);
     }
   }
 
   protected confirmarEntrada() {
+    clearTimeout(this.esperaCodigo);
     const v = this.entrada().trim();
     if (!v) return;
     const digitos = v.replace(/\D/g, '');
@@ -366,7 +387,12 @@ export class Vender {
   protected lerBarras(codigo: string) {
     const item = this.catalogo.buscarBarras(codigo);
     this.entrada.set('');
-    if (!item) return this.falhar('Código de barras não cadastrado. Só é possível vender produtos do catálogo.');
+    this.barrasNovo.set('');
+    if (!item) {
+      // Admin pode cadastrar na hora; vendedor só vê o aviso
+      if (this.auth.isAdmin()) this.barrasNovo.set(codigo.trim());
+      return this.falhar(`Código de barras ${codigo.trim()} não cadastrado. Só é possível vender produtos do catálogo.`);
+    }
     if (this.disponivel(item) <= 0) return this.falhar(`${item.codigo} ${item.nome} · ${item.variacao} está sem estoque.`);
     this.adicionar(item);
   }

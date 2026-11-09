@@ -1,8 +1,9 @@
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { Icone, Toast } from '../../shared/ui';
+import { Scanner } from '../../shared/scanner';
 
 export interface Tipo {
   id: number;
@@ -17,22 +18,24 @@ interface ProdutoLinha {
   marca: string | null;
   modelo: string | null;
   ativo: boolean;
-  variacoes: { nome: string; ativo: boolean }[];
+  variacoes: { nome: string; ativo: boolean; codigo_barras: string | null }[];
   compatibilidades: { status: string }[];
 }
 
 @Component({
   selector: 'app-produtos',
-  imports: [FormsModule, RouterLink, Icone],
+  imports: [FormsModule, RouterLink, Icone, Scanner],
   template: `
     <main class="pagina">
       <header class="cabecalho">
         <h1>Produtos</h1>
         <div class="acoes">
+          <button class="btn-icone" (click)="scanner.abrir()" aria-label="Cadastrar ou abrir produto pelo código de barras"><i-con nome="scan" /></button>
           <button class="btn sec pequeno" (click)="abrirTipos()">Tipos</button>
           <a class="btn pequeno" routerLink="/admin/produtos/novo"><i-con nome="mais1" /> Novo</a>
         </div>
       </header>
+      <app-scanner #scanner (lido)="porBarras($event)" />
 
       <input class="input" type="search" placeholder="Buscar" [ngModel]="termo()" (ngModelChange)="termo.set($event)" aria-label="Buscar produtos" />
 
@@ -118,6 +121,7 @@ interface ProdutoLinha {
 })
 export class Produtos {
   private toast = inject(Toast);
+  private router = inject(Router);
   protected termo = signal('');
   protected tipos = signal<Tipo[]>([]);
   protected produtos = signal<ProdutoLinha[]>([]);
@@ -130,7 +134,7 @@ export class Produtos {
   protected grupos = computed(() => {
     const t = this.termo().trim().toLowerCase();
     const filtrados = this.produtos().filter(
-      (p) => !t || [p.codigo, p.nome, p.marca, p.modelo].join(' ').toLowerCase().includes(t),
+      (p) => !t || [p.codigo, p.nome, p.marca, p.modelo, ...p.variacoes.map((v) => v.codigo_barras)].join(' ').toLowerCase().includes(t),
     );
     return this.tipos()
       .map((tipo) => ({ tipo, itens: filtrados.filter((p) => p.tipo_id === tipo.id) }))
@@ -139,6 +143,19 @@ export class Produtos {
 
   constructor() {
     this.carregar();
+  }
+
+  /** Código lido: abre o produto que já o tem (mesmo variação inativa) ou um cadastro novo já preenchido. */
+  protected async porBarras(codigo: string) {
+    const c = codigo.trim();
+    const { data, error } = await supabase.from('variacoes').select('produto_id').eq('codigo_barras', c).maybeSingle();
+    if (error) return this.toast.mostrar(mensagemErro(error), 'erro');
+    if (data) {
+      this.toast.mostrar('Esse código já está cadastrado: abrindo o produto.', 'info', 2500);
+      this.router.navigate(['/admin/produtos', data.produto_id]);
+    } else {
+      this.router.navigate(['/admin/produtos/novo'], { queryParams: { barras: c } });
+    }
   }
 
   protected pad(n: number) {
@@ -159,7 +176,7 @@ export class Produtos {
       supabase.from('tipos').select('id, nome').order('id'),
       supabase
         .from('produtos')
-        .select('id, codigo, tipo_id, nome, marca, modelo, ativo, variacoes(nome, ativo), compatibilidades(status)')
+        .select('id, codigo, tipo_id, nome, marca, modelo, ativo, variacoes(nome, ativo, codigo_barras), compatibilidades(status)')
         .order('codigo'),
     ]);
     this.carregando.set(false);
