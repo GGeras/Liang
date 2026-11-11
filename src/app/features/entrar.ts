@@ -3,10 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { mensagemErro } from '../core/supabase';
+import { SeletorIdioma } from '../shared/idioma';
 
 @Component({
   selector: 'app-entrar',
-  imports: [FormsModule],
+  imports: [FormsModule, SeletorIdioma],
   template: `
     <main class="entrar">
       <div class="marca">
@@ -32,6 +33,7 @@ import { mensagemErro } from '../core/supabase';
         </button>
       </form>
       <p class="muted small rodape">Sem acesso? Peça a um administrador para criar seu usuário.</p>
+      <app-idioma />
     </main>
   `,
   styles: `

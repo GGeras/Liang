@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { Toast } from './shared/ui';
 import { AtualizacaoService } from './core/atualizacao.service';
 import { InstalacaoService } from './core/instalacao.service';
+import { IdiomaService } from './core/idioma.service';
 
 @Component({
   selector: 'app-root',
@@ -34,4 +35,6 @@ export class App {
   private atualizacao = inject(AtualizacaoService);
   // Guarda o pedido de instalação do navegador desde a abertura (usado em /instalar)
   private instalacao = inject(InstalacaoService);
+  // Aplica o idioma escolhido (PT-BR ou mandarim) desde a primeira tela
+  private idioma = inject(IdiomaService);
 }

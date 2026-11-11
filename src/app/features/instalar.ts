@@ -2,11 +2,12 @@ import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { InstalacaoService } from '../core/instalacao.service';
 import { Icone } from '../shared/ui';
+import { SeletorIdioma } from '../shared/idioma';
 
 /** /instalar — só o botão que instala o Liang (PWA). Pública, sem login. */
 @Component({
   selector: 'app-instalar',
-  imports: [Icone],
+  imports: [Icone, SeletorIdioma],
   template: `
     <main class="instalar">
       <img src="icons/icon-192x192.png" alt="" width="96" height="96" class="icone-app" />
@@ -20,6 +21,7 @@ import { Icone } from '../shared/ui';
       }
       <!-- Só aparece se o navegador não deixar instalar por botão (iPhone ou navegador sem suporte) -->
       <p class="dica small" aria-live="polite">{{ dica() }}</p>
+      <app-idioma />
     </main>
   `,
   styles: `

@@ -37,6 +37,7 @@ PWA mobile de controle de estoque de peças de celular (telas, tampas, conectore
   - `.rotulo-opcional`: texto de botão que some abaixo de 360px.
 - Grids com coluna flexível usam `minmax(0, 1fr)` para não estourar com nomes longos.
 - Toda tela deve funcionar em 320, 360 e 412px sem rolagem horizontal.
+- **Idiomas:** PT-BR (padrão) e mandarim (`zh-CN`), escolhidos em Entrar, Mais, Minhas vendas e /instalar (`app-idioma`). As telas continuam escritas em português; `core/idioma.service.ts` troca os textos na tela pelo dicionário `core/idioma.zh.ts` (textos fixos e modelos com `{}`). Texto novo: acrescente a tradução lá. Dados do cadastro (produtos, clientes) não são traduzidos; use `translate="no"` para proteger um trecho. `LIANG_ZH=1 node ferramentas/auditoria-mobile.js 360 .auditoria/zh admin` lista o que ficou em português (`TRADUZIR`).
 - **Verificação:** `npm run auditoria` (requer `npx playwright install chromium` uma vez). Gera capturas em `.auditoria/` com dados fictícios e nomes longos, e lista elementos que estouram a tela. Olhar as capturas, não só a saída.
 
 ## Commits

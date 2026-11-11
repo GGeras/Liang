@@ -3,10 +3,11 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { VendasService } from '../../core/vendas.service';
 import { Icone, Toast } from '../../shared/ui';
+import { SeletorIdioma } from '../../shared/idioma';
 
 @Component({
   selector: 'app-mais',
-  imports: [RouterLink, Icone],
+  imports: [RouterLink, Icone, SeletorIdioma],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -22,12 +23,14 @@ import { Icone, Toast } from '../../shared/ui';
           </li>
         }
       </ul>
+      <app-idioma class="painel bloco-idioma" />
       <button class="btn sec bloco" (click)="sair()"><i-con nome="sair" /> Sair</button>
     </main>
   `,
   styles: `
     .menu a { display: flex; gap: .9rem; align-items: center; padding: .9rem 1rem; color: inherit; text-decoration: none; }
     .menu i-con { color: var(--cobalt); }
+    .bloco-idioma { display: block; padding: .75rem 1rem; margin-bottom: 1rem; }
   `,
 })
 export class Mais {
