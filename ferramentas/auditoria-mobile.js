@@ -10,7 +10,7 @@ fs.mkdirSync(OUT, { recursive: true });
 const A11Y = process.env.LIANG_A11Y === '1';
 // LIANG_ZH=1: roda com o app em mandarim e lista textos que ficaram em português (TRADUZIR)
 const ZH = process.env.LIANG_ZH === '1';
-const ZH_TXT = { 'Atacado': '批发', 'Finalizar venda': '结账', 'Revisar venda': '核对销售', 'Número no tipo': '类别内编号', 'Sem código (00-00)': '无条码（00-00）' };
+const ZH_TXT = { 'Atacado': '批发', 'Finalizar venda': '结账', 'Revisar venda': '核对销售', 'Número no tipo': '类别内编号', 'Sem código (00-00)': '00-00 编码' };
 const T = (pt) => (ZH ? ZH_TXT[pt] : pt);
 const semTraducao = new Map();
 const acesso = {};

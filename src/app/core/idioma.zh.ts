@@ -39,7 +39,7 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Atualizar': '更新',
   'Excel': 'Excel',
   'Sim': '是',
-  'Não': '否',
+  'Não': '不退回', // só aparece no cancelamento, ao lado de "Sim, devolver"
   'não': '否',
   'sim': '是',
   'Todos': '全部',
@@ -263,7 +263,7 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Novo produto': '新增商品',
   'Identificação': '编码方式',
   'Como o produto é identificado': '商品编码方式',
-  'Sem código (00-00)': '无条码（00-00）',
+  'Sem código (00-00)': '00-00 编码',
   'Leia ou digite': '扫描或输入',
   'Ler código de barras com a câmera': '用摄像头扫描条形码',
   'Escolha': '请选择',
@@ -279,7 +279,7 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Produto ativo (aparece para venda)': '上架（可以销售）',
   'Variações e preços': '规格和价格',
   'Cor ou qualidade (Incell, OLED, JK…). Cada variação tem preço e estoque próprios. Use "Padrão" se não houver.':
-    '颜色或品质（Incell、OLED、JK…）。每个规格单独定价、单独计库存。没有规格时填“默认”。',
+    '颜色或品质（Incell、OLED、JK…）。每个规格单独定价、单独计库存。没有规格时保留“Padrão”（默认）即可。',
   'Nome da variação': '规格名称',
   'Preço atacado': '批发价',
   'Preço varejo': '零售价',
@@ -305,9 +305,6 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Já existe um produto com esse código.': '已有商品使用此编码。',
   'Esse código de barras já está em outro produto.': '此条形码已被其他商品使用。',
   'Já existe uma variação com esse nome neste produto.': '此商品已有同名规格。',
-  'Produto: cadastrado': '商品：已新增',
-  'Produto: removido': '商品：已删除',
-  'Produto: alterado': '商品：已修改',
 
   // Vendas (admin)
   'Todos vendedores': '全部销售员',
@@ -407,13 +404,12 @@ export const MODELOS_ZH: Record<string, string> = {
   'Remover {}': '移除 {}',
   'Editar {}': '编辑 {}',
   'Código {} lido': '已扫描条码 {}',
+  'Esse código já está em outro produto: {}.': '此条码已被其他商品使用：{}。',
   'Esse código já está em {}.': '此条码已被 {} 使用。',
+  'Esse código já está na variação nova deste produto.': '此条码已被本商品的新规格使用。',
+  'Ler código de barras da variação nova com a câmera': '用摄像头扫描新规格的条形码',
   'Esse código já está na variação {} deste produto.': '此条码已被本商品的规格“{}”使用。',
   'Produto {} salvo': '商品 {} 已保存',
-  'Variação {}: cadastrado': '规格 {}：已新增',
-  'Variação {}: removido': '规格 {}：已删除',
-  'Compatível {}: cadastrado': '适用机型 {}：已添加',
-  'Compatível {}: removido': '适用机型 {}：已删除',
 
   // Vendas
   'Cancelada: {}': '已取消：{}',
@@ -430,7 +426,7 @@ export const MODELOS_ZH: Record<string, string> = {
 
   // Vender
   'Venda para {} não foi registrada': '{} 的销售单未成功提交',
-  '{} O administrador foi avisado.': '{} 已通知管理员。',
+  '{} O administrador foi avisado.': '{}已通知管理员。',
   '{} un. · {} disp.': '{}/件 · 可售 {}',
   '{} disp.': '可售 {}',
   '{} disponível(is)': '可售 {}',
