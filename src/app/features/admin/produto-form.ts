@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth.service';
 import { DataHoraPipe, Ident, Icone, Toast, formatarBRL, identTexto } from '../../shared/ui';
 import { Scanner } from '../../shared/scanner';
 import { Tipo } from './produtos';
+import { IdiomaService } from '../../core/idioma.service';
 
 interface Variacao {
   id: string;
@@ -34,6 +35,12 @@ const CAMPOS: Record<string, string> = {
   nome: 'nome', marca: 'marca', modelo: 'modelo', descricao: 'descrição', foto_url: 'foto', ativo: 'ativo',
   tipo_id: 'tipo', seq: 'número', preco_atacado: 'atacado', preco_varejo: 'varejo', custo: 'custo',
   codigo_barras: 'código de barras', estoque_minimo: 'estoque mínimo', status: 'situação', observacao: 'observação',
+};
+// Histórico em mandarim: a frase é montada aqui, então a tradução também
+const CAMPOS_ZH: Record<string, string> = {
+  nome: '名称', marca: '品牌', modelo: '型号', descricao: '描述', foto_url: '照片', ativo: '启用',
+  tipo_id: '类别', seq: '编号', preco_atacado: '批发价', preco_varejo: '零售价', custo: '成本',
+  codigo_barras: '条形码', estoque_minimo: '最低库存', status: '状态', observacao: '备注',
 };
 const PRECOS = new Set(['preco_atacado', 'preco_varejo', 'custo']);
 
@@ -252,6 +259,7 @@ export class ProdutoForm {
   private alvoLeitura: Variacao | null = null;
   private router = inject(Router);
   private toast = inject(Toast);
+  private idioma = inject(IdiomaService);
   private catalogo = inject(CatalogoService);
   private auth = inject(AuthService);
 
@@ -362,17 +370,32 @@ export class ProdutoForm {
 
   /** "Variação Incell: varejo R$ 120,00 → R$ 150,00" */
   protected descrever(h: Alteracao): string {
+    const zh = this.idioma.idioma() === 'zh-CN';
     const reg = h.depois ?? h.antes ?? {};
     const alvo =
-      h.tabela === 'variacoes' ? `Variação ${reg['nome']}` : h.tabela === 'compatibilidades' ? `Compatível ${reg['modelo']}` : 'Produto';
-    if (h.acao === 'criado') return `${alvo}: cadastrado`;
-    if (h.acao === 'removido') return `${alvo}: removido`;
+      h.tabela === 'variacoes'
+        ? `${zh ? '规格' : 'Variação'} ${reg['nome']}`
+        : h.tabela === 'compatibilidades'
+          ? `${zh ? '适用机型' : 'Compatível'} ${reg['modelo']}`
+          : zh ? '商品' : 'Produto';
+    const dois = zh ? '：' : ': ';
+    if (h.acao === 'criado') return alvo + dois + (zh ? (h.tabela === 'compatibilidades' ? '已添加' : '已新增') : 'cadastrado');
+    if (h.acao === 'removido') return alvo + dois + (zh ? '已删除' : 'removido');
     const fmt = (k: string, v: unknown) =>
-      v === null || v === undefined || v === '' ? 'vazio' : PRECOS.has(k) ? formatarBRL(v as number) : typeof v === 'boolean' ? (v ? 'sim' : 'não') : String(v);
+      v === null || v === undefined || v === ''
+        ? (zh ? '空' : 'vazio')
+        : PRECOS.has(k) ? formatarBRL(v as number)
+        : typeof v === 'boolean' ? (zh ? (v ? '是' : '否') : v ? 'sim' : 'não')
+        : String(v);
+    const campo = (k: string) => (zh ? CAMPOS_ZH[k] : CAMPOS[k]);
     const mud = Object.keys(CAMPOS)
       .filter((k) => JSON.stringify(h.antes?.[k]) !== JSON.stringify(h.depois?.[k]))
-      .map((k) => (k === 'descricao' || k === 'foto_url' ? `${CAMPOS[k]} alterada` : `${CAMPOS[k]} ${fmt(k, h.antes?.[k])} → ${fmt(k, h.depois?.[k])}`));
-    return `${alvo}: ${mud.join('; ') || 'alterado'}`;
+      .map((k) =>
+        k === 'descricao' || k === 'foto_url'
+          ? `${campo(k)}${zh ? '已修改' : ' alterada'}`
+          : `${campo(k)} ${fmt(k, h.antes?.[k])} → ${fmt(k, h.depois?.[k])}`,
+      );
+    return alvo + dois + (mud.join(zh ? '；' : '; ') || (zh ? '已修改' : 'alterado'));
   }
 
   /** Ao escolher o tipo num produto novo, sugere o próximo número livre. */
