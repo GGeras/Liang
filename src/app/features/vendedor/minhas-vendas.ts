@@ -5,6 +5,7 @@ import { AuthService } from '../../core/auth.service';
 import { VendasService } from '../../core/vendas.service';
 import { PAGAMENTOS } from '../../core/models';
 import { BrlPipe, DataHoraPipe, Icone, Toast } from '../../shared/ui';
+import { SeletorIdioma } from '../../shared/idioma';
 
 export interface VendaLinha {
   id: string;
@@ -25,7 +26,7 @@ export const SELECT_VENDA =
 
 @Component({
   selector: 'app-minhas-vendas',
-  imports: [BrlPipe, DataHoraPipe, Icone],
+  imports: [BrlPipe, DataHoraPipe, Icone, SeletorIdioma],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -82,10 +83,12 @@ export const SELECT_VENDA =
       @if (temMais()) {
         <button class="btn sec" (click)="carregar()" [disabled]="carregando()">Carregar mais</button>
       }
+      <app-idioma class="painel bloco-idioma" />
     </main>
   `,
   styles: `
     h2 { margin-bottom: .5rem; }
+    .bloco-idioma { display: block; padding: .75rem 1rem; margin-top: 1.25rem; }
     .fila li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .1rem .75rem; padding: .75rem 1rem; align-items: center; }
     .fila li > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .fila li > .small { grid-row: 2; }

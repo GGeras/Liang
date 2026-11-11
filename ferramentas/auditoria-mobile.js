@@ -8,6 +8,11 @@ const W = +process.argv[2] || 360, OUT = process.argv[3] || path.join(__dirname,
 fs.mkdirSync(OUT, { recursive: true });
 // Modo acessibilidade (ferramentas/acessibilidade.js): roda o @accesslint/core em cada tela e folha.
 const A11Y = process.env.LIANG_A11Y === '1';
+// LIANG_ZH=1: roda com o app em mandarim e lista textos que ficaram em português (TRADUZIR)
+const ZH = process.env.LIANG_ZH === '1';
+const ZH_TXT = { 'Atacado': '批发', 'Finalizar venda': '结账', 'Revisar venda': '核对销售', 'Número no tipo': '类别内编号', 'Sem código (00-00)': '无条码（00-00）' };
+const T = (pt) => (ZH ? ZH_TXT[pt] : pt);
+const semTraducao = new Map();
 const acesso = {};
 const root = path.join(__dirname, '..', 'dist', 'liang', 'browser');
 // Mesma CSP do Cloudflare Pages (public/_headers): qualquer bloqueio aparece como "CSP" na saída
@@ -84,6 +89,7 @@ const telas = PAPEL === 'admin'
   const ctx = await b.newContext({ viewport: { width: W, height: 760 }, deviceScaleFactor: 1, bypassCSP: A11Y });
   await ctx.route('**/*supabase.co/**', (rt) => rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(resp(rt.request().url(), rt.request().headers()['accept'] || '')) }));
   await ctx.route('**/fonts.googleapis.com/**', (rt) => rt.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+  if (ZH) await ctx.addInitScript(() => localStorage.setItem('liang.idioma', 'zh-CN'));
   const p = await ctx.newPage();
   p.on('pageerror', (e) => console.log('ERRO JS', e.message));
   p.on('console', (m) => {
@@ -112,6 +118,16 @@ const telas = PAPEL === 'admin'
       if (document.documentElement.scrollWidth > W) out.push(`PAGINA scrollWidth=${document.documentElement.scrollWidth}`);
       return [...new Set(out)];
     }, W);
+    if (ZH) {
+      const restos = await p.evaluate(() => {
+        const out = [], ok = (el) => el && !el.closest('[translate="no"], svg, script, style, .num, .etiqueta, .barras-id');
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode()); ) { const t = n.data.trim(); if (/[A-Za-zÀ-ú]{2}/.test(t) && ok(n.parentElement) && n.parentElement.getClientRects().length) out.push(t); }
+        for (const el of document.querySelectorAll('[aria-label], [placeholder], [title], [alt]')) for (const a of ['aria-label', 'placeholder', 'title', 'alt']) { const v = el.getAttribute(a); if (v && /[A-Za-zÀ-ú]{2}/.test(v) && ok(el)) out.push('@' + a + ': ' + v); }
+        return out;
+      });
+      for (const t of restos) { if (!semTraducao.has(t)) semTraducao.set(t, nome); }
+    }
     if (A11Y) {
       await p.waitForTimeout(350); // espera a animação da folha terminar (opacidade parcial distorce o contraste)
       if (!(await p.evaluate(() => 'AccessLint' in window))) await p.addScriptTag({ path: require.resolve('@accesslint/core/iife') });
@@ -137,10 +153,10 @@ const telas = PAPEL === 'admin'
   await p.fill('#codigo', '0201'); await p.waitForTimeout(450);
   await p.fill('#codigo', '9999'); await p.waitForTimeout(450);
   await checar('vender-carrinho'); await p.screenshot({ path: `${OUT}/vender-carrinho.png`, fullPage: true });
-  await p.click('text=Atacado'); await p.click('text=Finalizar venda');
+  await p.click('text=' + T('Atacado')); await p.click('text=' + T('Finalizar venda'));
   await p.fill('dialog[open] input', 'Assistência Técnica Cell Center Uberlândia Ltda');
   await checar('folha-finalizar'); await p.screenshot({ path: `${OUT}/folha-finalizar.png` });
-  await p.click('dialog[open] button:has-text("Pix")'); await p.click('text=Revisar venda'); await p.waitForTimeout(200);
+  await p.click('dialog[open] button:has-text("Pix")'); await p.click('text=' + T('Revisar venda')); await p.waitForTimeout(200);
   await checar('folha-confirmar'); await p.screenshot({ path: `${OUT}/folha-confirmar.png` });
   if (PAPEL === 'admin') {
     await p.goto('http://localhost:4301/admin/estoque'); await p.waitForTimeout(600);
@@ -179,9 +195,9 @@ const telas = PAPEL === 'admin'
     const repetido = await p.locator('.cb-linha input').first().inputValue();
     if (repetido) console.log('BARRAS código repetido foi aceito no cadastro:', repetido);
     await p.goto('http://localhost:4301/admin/produtos/novo'); await p.waitForTimeout(800);
-    const modoBarras = (await p.locator('.cb-linha input').count()) === 1 && (await p.getByText('Número no tipo').count()) === 0;
-    await p.click('button:has-text("Sem código (00-00)")'); await p.waitForTimeout(200);
-    const modoCodigo = (await p.locator('.cb-linha input').count()) === 0 && (await p.getByText('Número no tipo').count()) === 1;
+    const modoBarras = (await p.locator('.cb-linha input').count()) === 1 && (await p.getByText(T('Número no tipo')).count()) === 0;
+    await p.click(`button:has-text("${T('Sem código (00-00)')}")`); await p.waitForTimeout(200);
+    const modoCodigo = (await p.locator('.cb-linha input').count()) === 0 && (await p.getByText(T('Número no tipo')).count()) === 1;
     if (!modoBarras || !modoCodigo) console.log('MODO cadastro: barras ok =', modoBarras, '· 00-00 ok =', modoCodigo);
     await checar('produto-novo-00-00'); await p.screenshot({ path: `${OUT}/produto-novo-00-00.png`, fullPage: true });
   }
@@ -189,6 +205,10 @@ const telas = PAPEL === 'admin'
   if (A11Y) {
     fs.writeFileSync(`${OUT}/acessibilidade.json`, JSON.stringify(acesso, null, 1));
     for (const [k, v] of Object.entries(acesso)) if (v.length) console.log('## a11y', k, '\n  ' + v.map((x) => `[${x.impacto}] ${x.regra} · ${x.seletor} · ${x.msg}`).join('\n  '));
+  }
+  if (ZH) {
+    fs.writeFileSync(`${OUT}/sem-traducao.txt`, [...semTraducao].map(([t, tela]) => `${tela} | ${t}`).join(String.fromCharCode(10)));
+    console.log('TRADUZIR', semTraducao.size, 'textos em português (lista em', `${OUT}/sem-traducao.txt)`);
   }
   for (const [k, v] of Object.entries(relatorio)) if (v.length) console.log('##', k, '\n  ' + v.join('\n  '));
   await b.close(); srv.close();
