@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { DataHoraPipe, Ident, Toast } from '../../shared/ui';
+import { codigoVenda } from '../../core/codigo';
 
 interface Ocorrencia {
   id: string;
@@ -11,6 +12,7 @@ interface Ocorrencia {
   resolvida_em: string | null;
   usuario: { nome: string } | null;
   dados: {
+    venda_id?: string;
     cliente?: string;
     tipo_preco?: string;
     pagamento?: string;
@@ -40,6 +42,9 @@ interface Ocorrencia {
         @for (o of lista(); track o.id) {
           <li class="oc">
             <strong>{{ o.mensagem }}</strong>
+            @if (o.dados.venda_id) {
+              <span class="small num">Venda nº {{ cod(o.dados.venda_id) }}</span>
+            }
             <p class="small">
               Vendedor <strong>{{ o.usuario?.nome }}</strong> · cliente <strong>{{ o.dados.cliente }}</strong><br />
               <span class="muted">Venda feita em {{ o.dados.criada_em | dataHora }}, recusada em {{ o.criado_em | dataHora }}</span>
@@ -73,6 +78,7 @@ interface Ocorrencia {
   `,
 })
 export class Ocorrencias {
+  protected cod = codigoVenda;
   private toast = inject(Toast);
   protected resolvidas = signal(false);
   protected lista = signal<Ocorrencia[]>([]);

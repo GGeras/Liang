@@ -1,5 +1,7 @@
 import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { codigoVenda } from '../../core/codigo';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { CatalogoService } from '../../core/catalogo.service';
 import { PAGAMENTOS, SELECT_VENDA, VendaLinha } from '../../core/models';
@@ -9,10 +11,13 @@ import { Ajuda } from '../../shared/ajuda';
 
 @Component({
   selector: 'app-vendas-admin',
-  imports: [FormsModule, BrlPipe, DataHoraPipe, Icone, Ajuda],
+  imports: [FormsModule, RouterLink, BrlPipe, DataHoraPipe, Icone, Ajuda],
   template: `
     <main class="pagina">
-      <header class="cabecalho"><h1>Vendas</h1></header>
+      <header class="cabecalho">
+        <h1>Vendas</h1>
+        <a class="btn sec pequeno" routerLink="/consultar"><i-con nome="lupa" /> Consultar código</a>
+      </header>
 
       <div class="filtros">
         <select class="input" [ngModel]="vendedor()" (ngModelChange)="vendedor.set($event); recarregar()" aria-label="Vendedor">
@@ -40,7 +45,7 @@ import { Ajuda } from '../../shared/ajuda';
               <strong class="num">{{ v.total | brl }}</strong>
             </div>
             <span class="muted small">
-              {{ v.criada_em | dataHora }} · {{ v.vendedor?.nome }} · {{ v.tipo_preco === 'atacado' ? 'Atacado' : 'Varejo' }} · {{ pag[v.forma_pagamento] }}
+              <span class="num">nº {{ cod(v.id) }}</span> · {{ v.criada_em | dataHora }} · {{ v.vendedor?.nome }} · {{ v.tipo_preco === 'atacado' ? 'Atacado' : 'Varejo' }} · {{ pag[v.forma_pagamento] }}
               @if (v.offline) { · enviada offline }
             </span>
             <ul class="itens">
@@ -107,6 +112,7 @@ export class VendasAdmin {
   private catalogo = inject(CatalogoService);
   protected notinha = inject(NotinhaService);
   protected deLinha = notinhaDeLinha;
+  protected cod = codigoVenda;
   protected pag = PAGAMENTOS;
   protected lista = signal<VendaLinha[]>([]);
   protected vendedores = signal<{ id: string; nome: string }[]>([]);

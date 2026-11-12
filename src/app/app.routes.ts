@@ -14,6 +14,7 @@ export const routes: Routes = [
       { path: 'vender', loadComponent: () => import('./features/vendedor/vender').then((m) => m.Vender) },
       { path: 'catalogo', loadComponent: () => import('./features/vendedor/catalogo').then((m) => m.Catalogo) },
       { path: 'minhas-vendas', loadComponent: () => import('./features/vendedor/minhas-vendas').then((m) => m.MinhasVendas) },
+      { path: 'consultar', loadComponent: () => import('./features/consultar').then((m) => m.Consultar) },
       { path: 'notinha/:id', loadComponent: () => import('./features/notinha-pagina').then((m) => m.NotinhaPagina) },
       {
         path: 'admin',

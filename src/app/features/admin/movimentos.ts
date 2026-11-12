@@ -2,7 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { DataHoraPipe, Ident, Icone, Toast, baixarCsv } from '../../shared/ui';
-import { NOME_MOV } from './estoque';
+import { NOME_MOV, codigoMov } from '../../core/codigo';
+import { RouterLink } from '@angular/router';
 
 interface MovLinha {
   id: number;
@@ -20,12 +21,15 @@ const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado
 
 @Component({
   selector: 'app-movimentos',
-  imports: [FormsModule, DataHoraPipe, Ident, Icone],
+  imports: [FormsModule, RouterLink, DataHoraPipe, Ident, Icone],
   template: `
     <main class="pagina">
       <header class="cabecalho">
         <h1>Movimentações</h1>
+        <div class="acoes-topo">
+        <a class="btn-icone" routerLink="/consultar" aria-label="Consultar código"><i-con nome="lupa" /></a>
         <button class="btn sec pequeno" (click)="exportar()"><i-con nome="baixar" /> <span class="rotulo-opcional">Excel</span></button>
+        </div>
       </header>
       <p class="muted small">Histórico completo e imutável: toda entrada, venda, ajuste e cancelamento.</p>
 
@@ -52,7 +56,7 @@ const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado
               <span class="num" [class.pos]="m.quantidade > 0" [class.neg]="m.quantidade < 0">{{ m.quantidade > 0 ? '+' : '' }}{{ m.quantidade }}</span>
               <span class="muted small num">saldo {{ m.saldo_apos }}</span>
             </div>
-            <p class="meta small"><span class="tipo" [attr.data-tipo]="m.tipo">{{ nomes[m.tipo] }}</span> <span class="muted">{{ m.criado_em | dataHora }} · {{ m.perfis?.nome }}</span></p>
+            <p class="meta small"><span class="tipo" [attr.data-tipo]="m.tipo">{{ nomes[m.tipo] }}</span> <span class="num cod">{{ codMov(m.id) }}</span> <span class="muted">{{ m.criado_em | dataHora }} · {{ m.perfis?.nome }}</span></p>
             @if (m.motivo) {
               <p class="motivo small">{{ m.motivo }}</p>
             }
@@ -77,6 +81,8 @@ const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado
     .meta, .motivo { grid-column: 1 / -1; }
     .meta { display: flex; flex-wrap: wrap; column-gap: .4rem; }
     .tipo { font-weight: 700; }
+    .cod { font-weight: 650; }
+    .acoes-topo { display: flex; gap: .4rem; align-items: center; }
     .motivo { padding: .4rem .6rem; background: var(--paper); border-radius: var(--r-sm); }
     .pos { color: var(--ok); }
     .neg { color: var(--danger); }
@@ -85,6 +91,7 @@ const SELECT = 'id, tipo, quantidade, saldo_apos, custo_unitario, motivo, criado
 export class Movimentos {
   private toast = inject(Toast);
   protected nomes = NOME_MOV;
+  protected codMov = codigoMov;
   protected tiposMov = ['entrada', 'venda', 'ajuste', 'cancelamento'];
   protected tipo = signal<string | null>(null);
   protected lista = signal<MovLinha[]>([]);
@@ -133,9 +140,9 @@ export class Movimentos {
     }
     const fmt = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' });
     baixarCsv(`liang-movimentacoes-${new Date().toISOString().slice(0, 10)}.csv`, [
-      ['Data', 'Tipo', 'Código', 'Produto', 'Variação', 'Quantidade', 'Saldo após', 'Custo un.', 'Usuário', 'Motivo'],
+      ['Nº', 'Data', 'Tipo', 'Código', 'Produto', 'Variação', 'Quantidade', 'Saldo após', 'Custo un.', 'Usuário', 'Motivo'],
       ...todos.map((m) => [
-        fmt.format(new Date(m.criado_em)), NOME_MOV[m.tipo], m.variacoes.produtos.codigo ?? m.variacoes.codigo_barras ?? '', m.variacoes.produtos.nome,
+        codigoMov(m.id), fmt.format(new Date(m.criado_em)), NOME_MOV[m.tipo], m.variacoes.produtos.codigo ?? m.variacoes.codigo_barras ?? '', m.variacoes.produtos.nome,
         m.variacoes.nome, m.quantidade, m.saldo_apos, m.custo_unitario === null ? '' : Number(m.custo_unitario),
         m.perfis?.nome ?? '', m.motivo ?? '',
       ]),

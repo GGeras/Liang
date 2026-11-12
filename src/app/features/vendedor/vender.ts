@@ -23,7 +23,7 @@ import { Scanner } from '../../shared/scanner';
 
 interface RascunhoVenda {
   itens: ItemCarrinho[];
-  tipo: TipoPreco;
+  tipo: TipoPreco | null;
   cliente: string;
   pagamento: FormaPagamento | null;
   ultima: { venda: VendaPendente; total: number } | null;
@@ -36,7 +36,8 @@ interface RascunhoVenda {
 @Injectable({ providedIn: 'root' })
 export class CarrinhoService {
   readonly itens = signal<ItemCarrinho[]>([]);
-  readonly tipo = signal<TipoPreco>('varejo');
+  /** Atacado ou varejo: escolhido no fim, ao finalizar (até lá o carrinho mostra os dois preços). */
+  readonly tipo = signal<TipoPreco | null>(null);
   readonly cliente = signal('');
   readonly pagamento = signal<FormaPagamento | null>(null);
   /** Última venda finalizada: o aviso com "Imprimir notinha" fica até a próxima venda começar. */
@@ -88,7 +89,7 @@ export class CarrinhoService {
         this.itens.set(itens);
         this.tipo.set(r.tipo);
         this.cliente.set(r.cliente);
-        this.pagamento.set(r.pagamento && pagamentosPermitidos(r.tipo).includes(r.pagamento) ? r.pagamento : null);
+        this.pagamento.set(r.pagamento && (!r.tipo || pagamentosPermitidos(r.tipo).includes(r.pagamento)) ? r.pagamento : null);
         if (!this.ultima()) this.ultima.set(r.ultima);
       },
     });
@@ -96,6 +97,7 @@ export class CarrinhoService {
 
   limpar() {
     this.itens.set([]);
+    this.tipo.set(null);
     this.cliente.set('');
     this.pagamento.set(null);
   }
@@ -114,10 +116,6 @@ export class CarrinhoService {
     <main class="pagina">
       <header class="cabecalho">
         <h1>Vender</h1>
-        <div class="segmento tipo" role="group" aria-label="Tipo de preço">
-          <button type="button" [attr.aria-pressed]="c.tipo() === 'varejo'" (click)="mudarTipo('varejo')">Varejo</button>
-          <button type="button" [attr.aria-pressed]="c.tipo() === 'atacado'" (click)="mudarTipo('atacado')">Atacado</button>
-        </div>
       </header>
 
       @for (a of vendas.meusAvisos(); track a.id) {
@@ -181,13 +179,14 @@ export class CarrinhoService {
         @if (c.itens().length === 0) {
           <p class="vazio">Nenhum item. Digite um código acima ou leia um código de barras.</p>
         } @else {
+          <p class="muted small conta-itens">{{ qtdItens() }} {{ qtdItens() === 1 ? 'item' : 'itens' }}</p>
           <ul class="lista">
             @for (l of c.itens(); track l.item.variacao_id) {
               <li class="item">
                 <app-ident [codigo]="l.item.codigo" [barras]="l.item.codigo_barras" />
                 <div class="info">
                   <strong class="clamp-2">{{ l.item.nome }}</strong>
-                  <span class="muted small">{{ l.item.variacao }}</span>
+                  <span class="muted small">{{ l.item.variacao }} · {{ l.item.estoque }} disp.</span>
                 </div>
                 <div class="rodape-item">
                 <div class="qtd">
@@ -197,9 +196,11 @@ export class CarrinhoService {
                   <span class="num">{{ l.quantidade }}</span>
                   <button class="btn-icone" (click)="alterar(l, 1)" [disabled]="l.quantidade >= l.item.estoque" aria-label="Aumentar"><i-con nome="mais1" /></button>
                 </div>
+                <!-- Os dois preços até o vendedor escolher atacado ou varejo no fim -->
                 <span class="valores">
-                  <span class="muted small unit">{{ preco(l.item) | brl }} un. · {{ l.item.estoque }} disp.</span>
-                  <strong class="num">{{ preco(l.item) * l.quantidade | brl }}</strong>
+                  @for (t of tiposVisiveis(); track t) {
+                    <span class="valor"><span class="rot">{{ t === 'atacado' ? 'Atacado' : 'Varejo' }}</span><strong class="num">{{ precoDe(l.item, t) * l.quantidade | brl }}</strong></span>
+                  }
                 </span>
                 </div>
               </li>
@@ -211,9 +212,10 @@ export class CarrinhoService {
 
     @if (c.itens().length) {
       <div class="barra">
-        <div>
-          <span class="muted small">{{ qtdItens() }} {{ qtdItens() === 1 ? 'item' : 'itens' }} · {{ c.tipo() === 'atacado' ? 'Atacado' : 'Varejo' }}</span>
-          <strong class="total num">{{ total() | brl }}</strong>
+        <div class="totais">
+          @for (t of tiposVisiveis(); track t) {
+            <span class="valor"><span class="rot">{{ t === 'atacado' ? 'Atacado' : 'Varejo' }}</span><strong class="total num">{{ totalDe(t) | brl }}</strong></span>
+          }
         </div>
         <button class="btn" (click)="abrirFinalizar()">Finalizar venda</button>
       </div>
@@ -235,7 +237,11 @@ export class CarrinhoService {
             <li>
               <button class="opcao" (click)="adicionar(o); dlgVar.close()" [disabled]="disponivel(o) <= 0">
                 <span><strong>{{ o.variacao }}</strong><br /><span class="small muted">{{ disponivel(o) }} disponível(is)</span></span>
-                <span class="num preco">{{ preco(o) | brl }}</span>
+                <span class="valores">
+                  @for (t of tiposVisiveis(); track t) {
+                    <span class="valor"><span class="rot">{{ t === 'atacado' ? 'Atacado' : 'Varejo' }}</span><strong class="num preco">{{ precoDe(o, t) | brl }}</strong></span>
+                  }
+                </span>
               </button>
             </li>
           }
@@ -252,6 +258,17 @@ export class CarrinhoService {
 
       @if (!confirmando()) {
         <div class="form">
+          <div class="campo">
+            <span id="preco-rotulo">Preço da venda</span>
+            <div class="segmento preco-venda" role="group" aria-labelledby="preco-rotulo">
+              @for (t of tiposPreco; track t) {
+                <button type="button" [attr.aria-pressed]="c.tipo() === t" (click)="mudarTipo(t)">
+                  <span>{{ t === 'atacado' ? 'Atacado' : 'Varejo' }}</span>
+                  <strong class="num">{{ totalDe(t) | brl }}</strong>
+                </button>
+              }
+            </div>
+          </div>
           <label class="campo">
             <span>Nome do cliente</span>
             <input [ngModel]="c.cliente()" (ngModelChange)="c.cliente.set($event)" autocomplete="off" autocapitalize="words" maxlength="120" />
@@ -267,7 +284,7 @@ export class CarrinhoService {
               <span class="small muted">Atacado aceita só dinheiro ou Pix.</span>
             }
           </div>
-          <button class="btn bloco" [disabled]="!c.cliente().trim() || !c.pagamento()" (click)="confirmando.set(true)">Revisar venda</button>
+          <button class="btn bloco" [disabled]="!c.tipo() || !c.cliente().trim() || !c.pagamento()" (click)="confirmando.set(true)">Revisar venda</button>
         </div>
       } @else {
         <div class="resumo">
@@ -294,7 +311,6 @@ export class CarrinhoService {
     <app-scanner #scanner (lido)="lerBarras($event)" />
   `,
   styles: `
-    .tipo { width: 190px; }
     .aviso { display: flex; gap: .6rem; align-items: flex-start; padding: .8rem; border-radius: var(--r-md); background: var(--danger-bg); color: var(--danger); }
     .aviso div { flex: 1; }
     .feita { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .6rem; align-items: start; padding: .8rem; border-radius: var(--r-md); background: var(--ok-bg); color: var(--ok); }
@@ -333,9 +349,12 @@ export class CarrinhoService {
     .rodape-item { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
     .qtd { display: flex; align-items: center; background: var(--paper); border-radius: 99px; flex: none; }
     .qtd span { min-width: 1.6rem; text-align: center; font-weight: 750; }
-    .valores { display: grid; justify-items: end; line-height: 1.25; min-width: 0; }
+    /* Varejo e atacado lado a lado com o rótulo: "Varejo R$ 36,00" / "Atacado R$ 16,00" */
+    .valores { display: grid; justify-items: end; gap: .1rem; line-height: 1.25; min-width: 0; }
+    .valor { display: flex; align-items: baseline; justify-content: flex-end; gap: .4rem; white-space: nowrap; }
+    .valor .rot { font-size: .75rem; font-weight: 600; color: var(--muted); }
     .valores strong { font-size: 1.05rem; }
-    .unit { font-variant-numeric: tabular-nums; text-align: right; }
+    .conta-itens { margin: 0 0 .4rem .25rem; }
 
     .barra {
       position: fixed; z-index: 25; left: 0; right: 0; bottom: calc(var(--nav-h) + var(--safe-b));
@@ -343,8 +362,11 @@ export class CarrinhoService {
       padding: .75rem 1rem; background: var(--surface); border-top: 1px solid var(--line);
       box-shadow: 0 -6px 18px rgb(23 33 48 / .08);
     }
-    .barra div { display: grid; min-width: 0; }
-    .total { font-size: clamp(1.1rem, 5.5vw, 1.4rem); font-stretch: 112%; }
+    .totais { display: grid; min-width: 0; line-height: 1.2; }
+    .totais .valor { justify-content: space-between; gap: .6rem; }
+    .totais .rot { min-width: 3.6rem; }
+    .total { font-size: clamp(1.05rem, 5vw, 1.3rem); font-stretch: 112%; }
+    .totais:has(.valor + .valor) .total { font-size: clamp(1rem, 4.6vw, 1.15rem); }
     .barra .btn { flex: none; padding: 0 clamp(.8rem, 4vw, 1.1rem); }
     :host ::ng-deep .pagina { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 6rem); }
 
@@ -357,6 +379,9 @@ export class CarrinhoService {
     .preco { font-weight: 750; font-size: 1.1rem; }
 
     .form { display: grid; gap: 1rem; }
+    /* Escolha do preço no fim: cada botão já mostra o total da venda naquele preço */
+    .preco-venda button { display: grid; gap: .1rem; height: auto; min-height: 56px; padding-block: .45rem; line-height: 1.2; }
+    .preco-venda button strong { font-size: 1.05rem; }
     .resumo { display: grid; gap: 1rem; }
     dl { margin: 0; display: grid; grid-template-columns: repeat(3, auto); justify-content: space-between; gap: .6rem 1rem; }
     dl .inteira { grid-column: 1 / -1; }
@@ -394,15 +419,23 @@ export class Vender {
   private dlgVar = viewChild.required<ElementRef<HTMLDialogElement>>('dlgVar');
   private dlgFim = viewChild.required<ElementRef<HTMLDialogElement>>('dlgFim');
 
-  protected total = computed(() => this.c.itens().reduce((s, l) => s + precoDe(l.item, this.c.tipo()) * l.quantidade, 0));
+  protected readonly tiposPreco: TipoPreco[] = ['varejo', 'atacado'];
+  protected readonly precoDe = precoDe;
+  /** Antes de escolher: os dois preços. Depois de escolher (no Finalizar): só o escolhido. */
+  protected tiposVisiveis = computed<TipoPreco[]>(() => (this.c.tipo() ? [this.c.tipo()!] : this.tiposPreco));
+  protected total = computed(() => this.totalDe(this.c.tipo() ?? 'varejo'));
   protected qtdItens = computed(() => this.c.itens().reduce((s, l) => s + l.quantidade, 0));
 
+  protected totalDe(t: TipoPreco) {
+    return this.c.itens().reduce((s, l) => s + precoDe(l.item, t) * l.quantidade, 0);
+  }
+
   protected preco(i: ItemCatalogo) {
-    return precoDe(i, this.c.tipo());
+    return precoDe(i, this.c.tipo() ?? 'varejo');
   }
 
   protected permitido(p: FormaPagamento) {
-    return pagamentosPermitidos(this.c.tipo()).includes(p);
+    return !this.c.tipo() || pagamentosPermitidos(this.c.tipo()!).includes(p);
   }
 
   protected mudarTipo(t: TipoPreco) {
@@ -528,7 +561,7 @@ export class Vender {
   protected async confirmar() {
     this.enviando.set(true);
     try {
-      const r = await this.vendas.finalizar(this.c.itens(), this.c.cliente(), this.c.tipo(), this.c.pagamento()!);
+      const r = await this.vendas.finalizar(this.c.itens(), this.c.cliente(), this.c.tipo()!, this.c.pagamento()!);
       if (r.status === 'recusada') {
         this.toast.mostrar(r.motivo, 'erro', 6000);
         return;

@@ -48,6 +48,7 @@ const ICONES: Record<string, string> = {
   mais1: 'M12 5v14M5 12h14',
   menos: 'M5 12h14',
   voltar: 'M15 18l-6-6 6-6',
+  lupa: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4.2-4.2',
   apagar: 'M9 4h6M4 7h16M6 7l1 13h10l1-13',
   nuvem: 'M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.1 11 3.5 3.5 0 0 0 7 18z',
   sem_nuvem: 'M3 3l18 18M7 18h10M17.6 10.05A6 6 0 0 0 9 6.6M6.1 11A3.5 3.5 0 0 0 7 18',
