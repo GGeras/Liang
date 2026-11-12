@@ -94,6 +94,7 @@ export class VendasService {
         nome: `${c.item.nome} · ${c.item.variacao}`,
         produto: c.item.nome,
         variacao: c.item.variacao,
+        tipo: c.item.tipo,
         preco_unitario: precoDe(c.item, tipo),
       })),
       vendedor_nome: perfil.nome,

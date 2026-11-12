@@ -47,7 +47,8 @@ const resumo = { faturamento: 128845.5, vendas: 1023, itens: 2441, ticket_medio:
   mais_vendidos: [{ codigo: '03-01', produto: 'Conector de carga Tipo-C', variacao: 'Padrão', quantidade: 1140, total: 200 }, { codigo: '01-02', produto: 'Tela Samsung Galaxy A32 5G com aro e digitalizador', variacao: 'Preta', quantidade: 9, total: 900 }, { codigo: null, codigo_barras: '7891234567890', produto: 'Película de vidro 3D Samsung Galaxy A54 5G com borda preta', variacao: 'Padrão', quantidade: 300, total: 7500 }],
   estoque_baixo: [{ codigo: '01-01', produto: 'Tela iPhone 11', variacao: 'JK', estoque: 0, minimo: 1 }, { codigo: '04-01', produto: 'Bateria Xiaomi Redmi Note 11 Pro BN5E', variacao: 'Padrão', estoque: 4, minimo: 13 }, { codigo: null, codigo_barras: '7890000000124', produto: 'Capa de silicone aveludada iPhone 13', variacao: 'Azul-marinho', estoque: 0, minimo: 2 }],
   valor_estoque: { custo: 14210, varejo: 129870 }, ocorrencias_abertas: 2 };
-const vi = (q, p, cod, nome, v, barras = null) => ({ quantidade: q, preco_unitario: p, variacoes: { nome: v, codigo_barras: barras, produtos: { codigo: cod, nome } } });
+const tipoDe = (nome) => (/^Tela/.test(nome) ? 'Telas' : /^Conector/.test(nome) ? 'Conector Carga' : /^Pel/.test(nome) ? 'Películas' : /^Tampa/.test(nome) ? 'Tampa Samsung' : 'Outros');
+const vi = (q, p, cod, nome, v, barras = null) => ({ quantidade: q, preco_unitario: p, variacoes: { nome: v, codigo_barras: barras, produtos: { codigo: cod, nome, tipos: { nome: tipoDe(nome) } } } });
 const U = (p) => `${p}-0000-4000-8000-000000000000`;
 const ID = { curta: U('c0a1b2c3'), longa: U('15151515'), nomeLongo: U('a1b2c3d4'), cancelada: U('b1b1b1b1') };
 const quinze = Array.from({ length: 15 }, (_, i) => { const c = cat[i % cat.length]; return vi(i + 1, c.preco_varejo, c.codigo, c.nome, c.variacao, c.codigo_barras); });

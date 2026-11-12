@@ -19,7 +19,8 @@ try {
 
 const uid = '11111111-1111-1111-1111-111111111111';
 const U = (p) => `${p}-0000-4000-8000-000000000000`;
-const vi = (q, p, cod, nome, v, barras = null) => ({ quantidade: q, preco_unitario: p, variacoes: { nome: v, codigo_barras: barras, produtos: { codigo: cod, nome } } });
+const tipoDe = (nome) => (/^Tela/.test(nome) ? 'Telas' : /^Conector/.test(nome) ? 'Conector Carga' : /^Pel/.test(nome) ? 'Películas' : /^Tampa/.test(nome) ? 'Tampa Samsung' : 'Outros');
+const vi = (q, p, cod, nome, v, barras = null) => ({ quantidade: q, preco_unitario: p, variacoes: { nome: v, codigo_barras: barras, produtos: { codigo: cod, nome, tipos: { nome: tipoDe(nome) } } } });
 const base = { tipo_preco: 'varejo', forma_pagamento: 'pix', status: 'concluida', criada_em: '2026-11-08T14:10:00Z', offline: false, motivo_cancelamento: null, vendedor: { nome: 'Carlos Eduardo Albuquerque' } };
 const itens15 = Array.from({ length: 15 }, (_, i) => vi(i + 1, 25 + i * 10, i % 3 ? `0${(i % 4) + 1}-0${(i % 7) + 1}` : null, i % 2 ? 'Tela Samsung Galaxy A32 5G com aro e digitalizador' : 'Conector de carga Tipo-C', i % 2 ? 'Preta' : 'Padrão', i % 3 ? null : '7891234567890'));
 const soma = (l) => l.reduce((s, i) => s + i.quantidade * i.preco_unitario, 0);
@@ -27,6 +28,7 @@ const vendas = {
   curta: { ...base, id: U('c0a1b2c3'), cliente_nome: 'João', forma_pagamento: 'dinheiro', venda_itens: [vi(1, 18, '03-01', 'Conector de carga Tipo-C', 'Padrão')] },
   'nome-longo': { ...base, id: U('a1b2c3d4'), cliente_nome: 'Assistência Técnica Cell Center Uberlândia', tipo_preco: 'atacado', venda_itens: [vi(10, 175, '01-02', 'Tela Samsung Galaxy A32 5G com aro, digitalizador e película de proteção instalada de fábrica', 'Preta'), vi(2, 12, null, 'Película de vidro 3D Samsung Galaxy A54 5G com borda preta', 'Padrão', '7891234567890')] },
   '15-itens': { ...base, id: U('15151515'), cliente_nome: 'Distribuidora de Peças Triângulo Mineiro Ltda', forma_pagamento: 'cartao', venda_itens: itens15 },
+  cores: { ...base, id: U('d0d0d0d0'), cliente_nome: 'Pedro', venda_itens: [vi(1, 20, '01-02', 'Tampa A02', 'Azul'), vi(1, 15, '02-06', 'Conector iPhone 8 Plus', 'Padrão'), vi(1, 20, '01-02', 'Tampa A02', 'Preta'), vi(2, 25, null, 'Película de vidro 3D Samsung A54', 'Padrão', '7891234567890')] },
   cancelada: { ...base, id: U('b1b1b1b1'), cliente_nome: 'Maria', status: 'cancelada', motivo_cancelamento: 'Cliente desistiu', venda_itens: [vi(1, 120, '01-01', 'Tela iPhone 11', 'Incell')] },
 };
 for (const v of Object.values(vendas)) v.total = soma(v.venda_itens);

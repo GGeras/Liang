@@ -110,9 +110,9 @@ export class DadosLojaPagina {
     tipo_preco: 'varejo',
     pagamento: 'pix',
     itens: [
-      { codigo: '01-02', nome: 'Tela Samsung Galaxy A32 5G com aro, digitalizador e película de proteção instalada', variacao: 'Preta', quantidade: 1, preco_unitario: 260 },
-      { codigo: '03-01', nome: 'Conector de carga Tipo-C', variacao: 'Padrão', quantidade: 2, preco_unitario: 18 },
-      { codigo: '7891234567890', nome: 'Película de vidro 3D', variacao: 'Padrão', quantidade: 1, preco_unitario: 25 },
+      { codigo: '01-02', tipo: 'Telas', nome: 'Tela Samsung Galaxy A32 5G com aro, digitalizador e película de proteção instalada', variacao: 'Preta', quantidade: 1, preco_unitario: 260 },
+      { codigo: '03-01', tipo: 'Conector Carga', nome: 'Conector de carga Tipo-C', variacao: 'Padrão', quantidade: 2, preco_unitario: 18 },
+      { codigo: '7891234567890', tipo: 'Películas', nome: 'Película de vidro 3D', variacao: 'Padrão', quantidade: 1, preco_unitario: 25 },
     ],
     total: 321,
     pendente: false,

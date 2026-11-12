@@ -11,6 +11,13 @@ const dataCompleta = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'America/Sao_Paulo',
 });
 
+const COD_00_00 = /^\d{2}-\d{2}$/;
+
+interface GrupoNotinha {
+  tipo: string;
+  produtos: { codigo: string | null; nome: string; itens: { detalhe: string; quantidade: number; preco_unitario: number }[] }[];
+}
+
 /** Nº curto da venda: os 8 primeiros caracteres do id. */
 export const numeroCurto = (id: string) => id.slice(0, 8).toUpperCase();
 
@@ -57,23 +64,38 @@ export const numeroCurto = (id: string) => id.slice(0, 8).toUpperCase();
       </dl>
 
       <hr class="nt-sep" />
-      <ul class="nt-itens">
-        @for (i of venda().itens; track $index) {
-          <li>
-            <p class="nt-produto">
-              @if (i.codigo) {
-                <b class="nt-cod">{{ i.codigo }}</b>
+      <div class="nt-itens">
+        @for (g of grupos(); track $index) {
+          <section class="nt-grupo">
+            @if (g.tipo) {
+              <p class="nt-tipo">{{ g.tipo }}</p>
+            }
+            <ul>
+              @for (p of g.produtos; track $index) {
+                <li>
+                  <p class="nt-produto">
+                    @if (p.codigo) {
+                      <b class="nt-cod">{{ p.codigo }}</b>
+                    }
+                    {{ p.nome }}
+                  </p>
+                  @for (i of p.itens; track $index) {
+                    <div class="nt-linha-item">
+                      @if (i.detalhe) {
+                        <p class="nt-var">{{ i.detalhe }}</p>
+                      }
+                      <p class="nt-conta">
+                        <span class="nt-num">{{ i.quantidade }} × {{ i.preco_unitario | brl }}</span>
+                        <span class="nt-num">{{ i.quantidade * i.preco_unitario | brl }}</span>
+                      </p>
+                    </div>
+                  }
+                </li>
               }
-              {{ i.nome }}
-            </p>
-            <p class="nt-var">{{ i.variacao }}</p>
-            <p class="nt-conta">
-              <span class="nt-num">{{ i.quantidade }} × {{ i.preco_unitario | brl }}</span>
-              <span class="nt-num">{{ i.quantidade * i.preco_unitario | brl }}</span>
-            </p>
-          </li>
+            </ul>
+          </section>
         }
-      </ul>
+      </div>
 
       <hr class="nt-sep" />
       <p class="nt-total"><span>TOTAL</span><span class="nt-num">{{ venda().total | brl }}</span></p>
@@ -109,6 +131,30 @@ export class Notinha {
       .endereco.split(/(?<=,)\s+(?!\d)/)
       .filter(Boolean),
   );
+
+  /**
+   * Itens agrupados pelo tipo (o nome do produto muitas vezes é só o modelo:
+   * "Tampa Samsung" › "Tampa A02") e, dentro do tipo, pelo produto: as cores e
+   * qualidades do mesmo produto saem embaixo de um nome só.
+   * O 00-00 é do produto e fica no nome; o código de barras é de cada variação
+   * e fica na linha dela. "Padrão" não diz nada ao cliente e não sai.
+   */
+  protected grupos = computed(() => {
+    const grupos: GrupoNotinha[] = [];
+    for (const i of this.venda().itens) {
+      const tipo = i.tipo?.trim() ?? '';
+      const codigo = i.codigo && COD_00_00.test(i.codigo) ? i.codigo : null;
+      const barras = i.codigo && !codigo ? i.codigo : null;
+      let g = grupos.find((x) => x.tipo === tipo);
+      if (!g) grupos.push((g = { tipo, produtos: [] }));
+      let p = g.produtos.find((x) => x.codigo === codigo && x.nome === i.nome);
+      if (!p) g.produtos.push((p = { codigo, nome: i.nome, itens: [] }));
+      const variacao = /^padr[aã]o$/i.test(i.variacao.trim()) ? '' : i.variacao.trim();
+      p.itens.push({ detalhe: [variacao, barras].filter(Boolean).join(' · '), quantidade: i.quantidade, preco_unitario: i.preco_unitario });
+    }
+    // Itens sem tipo conhecido (venda antiga do aparelho) vão para o fim, sem título
+    return [...grupos.filter((g) => g.tipo), ...grupos.filter((g) => !g.tipo)];
+  });
 
   protected numero = computed(() => numeroCurto(this.venda().id));
   protected data = computed(() => dataCompleta.format(new Date(this.venda().criada_em)).replace(',', ''));

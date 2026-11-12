@@ -107,11 +107,35 @@ app-notinha {
   }
 }
 
-/* Itens */
+/* Itens: agrupados por tipo (título com fio até a margem), produto, variações */
 .nt-itens {
+  display: grid;
+  gap: 3mm;
+}
+.nt-grupo ul {
   list-style: none;
   display: grid;
   gap: 2mm;
+}
+.nt-tipo {
+  display: flex;
+  align-items: center;
+  gap: 1.5mm;
+  margin-bottom: 1.2mm !important;
+  font-size: 11px;
+  font-weight: 800;
+  font-stretch: 115%;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  &::after {
+    content: '';
+    flex: 1;
+    min-width: 6mm;
+    border-top: 1px solid #000;
+  }
+}
+.nt-linha-item + .nt-linha-item {
+  margin-top: 1mm;
 }
 .nt-produto {
   font-weight: 600;

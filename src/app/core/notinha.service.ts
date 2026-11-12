@@ -21,6 +21,7 @@ export function notinhaDeLinha(v: VendaLinha): NotinhaVenda {
     pagamento: v.forma_pagamento,
     itens: v.venda_itens.map((i) => ({
       codigo: i.variacoes.produtos.codigo || i.variacoes.codigo_barras,
+      tipo: i.variacoes.produtos.tipos?.nome ?? '',
       nome: i.variacoes.produtos.nome,
       variacao: i.variacoes.nome,
       quantidade: i.quantidade,
@@ -77,6 +78,7 @@ export class NotinhaService {
         const [produto, ...resto] = i.nome.split(' · ');
         return {
           codigo: i.codigo,
+          tipo: i.tipo ?? c?.tipo ?? '',
           nome: i.produto ?? produto,
           variacao: i.variacao ?? resto.join(' · '),
           quantidade: i.quantidade,
