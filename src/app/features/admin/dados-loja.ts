@@ -43,7 +43,8 @@ function formatarCnpj(v: string): string {
           </label>
           <label class="campo">
             <span>Telefone</span>
-            <input name="telefone" [ngModel]="telefone()" (ngModelChange)="telefone.set($event)" maxlength="30" inputmode="tel" autocomplete="tel" />
+            <input name="telefone" [ngModel]="telefone()" (ngModelChange)="telefone.set($event)" maxlength="30" inputmode="tel" autocomplete="tel" aria-describedby="dica-telefone" />
+            <small id="dica-telefone" class="dica-campo">Se for celular com DDD, a notinha traz um QR code que abre o WhatsApp da loja.</small>
           </label>
           <label class="campo">
             <span>Mensagem de rodapé</span>
@@ -67,6 +68,7 @@ function formatarCnpj(v: string): string {
     .pagina.larga { max-width: 1100px; }
     .duas { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
     .form { display: grid; gap: 1rem; }
+    .dica-campo { font-size: .85rem; color: var(--muted); }
     .previa { display: grid; gap: .4rem; }
     .previa app-simulacao-notinha { margin-top: .35rem; }
     @media (min-width: 900px) {

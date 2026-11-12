@@ -37,26 +37,51 @@ app-notinha {
   }
 }
 
+/* Ritmo: 2,5 mm entre blocos (em volta de cada linha tracejada), 0,5 mm entre
+   linhas de um mesmo bloco, 2 mm entre itens. Dois eixos só: cabeçalho e rodapé
+   centralizados; o resto alinhado à esquerda, com valores encostados à direita. */
+.notinha {
+  --nt-bloco: 2.5mm;
+  --nt-linha: 0.5mm;
+}
+
 .nt-num {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
+.nt-sep {
+  height: 0;
+  margin: var(--nt-bloco) 0;
+  border: 0;
+  border-top: 1px dashed #000;
+}
+
+/* Cabeçalho */
 .nt-loja {
   text-align: center;
   font-size: 11px;
+  display: grid;
+  gap: 0.3mm;
+}
+/* Partes do endereço: só quebra entre elas (uma parte maior que a linha ainda quebra por dentro) */
+.nt-junto {
+  display: inline-block;
+}
+.nt-loja p {
+  text-wrap: balance;
 }
 .nt-nome {
   font-size: 12px;
   font-weight: 800;
   font-stretch: 115%;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-bottom: 0.5mm !important;
+  margin-bottom: 0.8mm !important;
 }
 
 .nt-marca {
-  margin-top: 2mm !important;
+  margin-top: var(--nt-bloco) !important;
   padding: 1mm;
   border: 2px solid #000;
   text-align: center;
@@ -68,19 +93,13 @@ app-notinha {
   letter-spacing: 0.02em;
 }
 
-.nt-sep {
-  height: 0;
-  margin: 2mm 0;
-  border: 0;
-  border-top: 1px dashed #000;
-}
-
+/* Dados da venda: rótulo numa coluna fixa, valor alinhado */
 .nt-dados {
   display: grid;
-  gap: 0.4mm;
+  gap: var(--nt-linha);
   div {
     display: grid;
-    grid-template-columns: 17mm minmax(0, 1fr);
+    grid-template-columns: 18mm minmax(0, 1fr);
     gap: 1mm;
   }
   dd {
@@ -88,10 +107,11 @@ app-notinha {
   }
 }
 
+/* Itens */
 .nt-itens {
   list-style: none;
   display: grid;
-  gap: 1.6mm;
+  gap: 2mm;
 }
 .nt-produto {
   font-weight: 600;
@@ -108,13 +128,14 @@ app-notinha {
   align-items: baseline;
   flex-wrap: wrap;
   gap: 0 2mm;
-  padding-left: 3mm;
+  margin-top: 0.3mm !important;
   span:last-child {
     margin-left: auto;
     font-weight: 700;
   }
 }
 
+/* Total */
 .nt-total,
 .nt-linha {
   display: flex;
@@ -125,15 +146,38 @@ app-notinha {
 .nt-total {
   font-weight: 800;
   letter-spacing: 0.04em;
+  margin-bottom: 0.3mm !important;
+}
+.nt-linha + .nt-linha {
+  margin-top: var(--nt-linha) !important;
 }
 
+/* Rodapé: mensagem da loja e QR do WhatsApp */
 .nt-rodape {
   text-align: center;
   font-size: 11px;
   display: grid;
-  gap: 1mm;
+  gap: var(--nt-bloco);
+}
+.nt-qr {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3mm;
+  text-align: left;
+  svg {
+    flex: none;
+    width: 18mm;
+    height: 18mm;
+    fill: #000;
+  }
+  b {
+    font-size: 12px;
+    font-weight: 800;
+  }
 }
 .nt-fiscal {
+  text-align: center;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
