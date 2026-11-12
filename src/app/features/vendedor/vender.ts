@@ -11,10 +11,12 @@ import {
   ItemCatalogo,
   PAGAMENTOS,
   TipoPreco,
+  VendaPendente,
   pagamentosPermitidos,
   precoDe,
 } from '../../core/models';
-import { BrlPipe, Ident, Icone, Toast, formatarBRL, identTexto } from '../../shared/ui';
+import { NotinhaService } from '../../core/notinha.service';
+import { BrlPipe, Ident, Icone, Toast, identTexto } from '../../shared/ui';
 import { Scanner } from '../../shared/scanner';
 
 /** Carrinho fica vivo enquanto o vendedor navega entre as abas. */
@@ -24,6 +26,8 @@ export class CarrinhoService {
   readonly tipo = signal<TipoPreco>('varejo');
   readonly cliente = signal('');
   readonly pagamento = signal<FormaPagamento | null>(null);
+  /** Última venda finalizada: o aviso com "Imprimir notinha" fica até a próxima venda começar. */
+  readonly ultima = signal<{ venda: VendaPendente; total: number } | null>(null);
 
   private atualizacao = inject(AtualizacaoService);
 
@@ -31,13 +35,16 @@ export class CarrinhoService {
     const auth = inject(AuthService);
     const catalogo = inject(CatalogoService);
     // Venda em andamento: a versão nova do app espera o carrinho esvaziar
-    this.atualizacao.bloquear(() => this.itens().length > 0 || !!this.cliente().trim());
+    this.atualizacao.bloquear(() => this.itens().length > 0 || !!this.cliente().trim() || !!this.ultima());
     // O carrinho é de quem está logado: trocou de usuário no aparelho, começa vazio
     let dono: string | undefined;
     effect(() => {
       const id = auth.perfil()?.id;
       untracked(() => {
-        if (dono !== undefined && id !== dono) this.limpar();
+        if (dono !== undefined && id !== dono) {
+          this.limpar();
+          this.ultima.set(null);
+        }
         dono = id;
       });
     });
@@ -59,8 +66,12 @@ export class CarrinhoService {
     this.itens.set([]);
     this.cliente.set('');
     this.pagamento.set(null);
-    // Venda terminou: se houver versão nova esperando, entra depois do aviso "Venda registrada"
-    setTimeout(() => this.atualizacao.tentarAplicar(), 4000);
+  }
+
+  dispensarUltima() {
+    this.ultima.set(null);
+    // Se houver versão nova esperando, entra agora que o aviso da venda saiu
+    this.atualizacao.tentarAplicar();
   }
 }
 
@@ -85,6 +96,26 @@ export class CarrinhoService {
             <p class="small">{{ a.motivo }} O administrador foi avisado.</p>
           </div>
           <button class="btn-icone" (click)="vendas.dispensarAviso(a.id)" aria-label="Dispensar aviso"><i-con nome="fechar" /></button>
+        </div>
+      }
+
+      @if (c.ultima(); as u) {
+        <div class="feita" [class.na-fila]="naFila(u.venda.id)" role="status">
+          <i-con [nome]="naFila(u.venda.id) ? 'sem_nuvem' : 'check'" />
+          <div class="feita-texto">
+            <p class="feita-titulo">
+              <strong>{{ naFila(u.venda.id) ? 'Venda guardada no aparelho' : 'Venda registrada' }}</strong>
+              <strong class="num">{{ u.total | brl }}</strong>
+            </p>
+            <p class="small uma-linha">{{ u.venda.cliente }}</p>
+            @if (naFila(u.venda.id)) {
+              <p class="small">Sem internet: envio automático quando conectar.</p>
+            }
+            <button type="button" class="btn sec pequeno" (click)="imprimirUltima()" [disabled]="abrindoNotinha()">
+              <i-con nome="imprimir" /> Imprimir notinha
+            </button>
+          </div>
+          <button type="button" class="btn-icone" (click)="c.dispensarUltima()" aria-label="Dispensar aviso"><i-con nome="fechar" /></button>
         </div>
       }
 
@@ -234,6 +265,13 @@ export class CarrinhoService {
     .tipo { width: 190px; }
     .aviso { display: flex; gap: .6rem; align-items: flex-start; padding: .8rem; border-radius: var(--r-md); background: var(--danger-bg); color: var(--danger); }
     .aviso div { flex: 1; }
+    .feita { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .6rem; align-items: start; padding: .8rem; border-radius: var(--r-md); background: var(--ok-bg); color: var(--ok); }
+    .feita.na-fila { background: var(--warn-bg); color: var(--warn); }
+    .feita > i-con { margin-top: .1rem; }
+    .feita-texto { display: grid; gap: .15rem; min-width: 0; }
+    .feita-titulo { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 .75rem; }
+    .feita .btn { justify-self: start; margin-top: .4rem; color: var(--ink); }
+    .feita .btn-icone { margin: -.5rem -.5rem 0 0; }
 
     .leitor { background: var(--ink); color: #fff; border-radius: var(--r-lg); padding: 1rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; }
     .rotulo { font-size: .85rem; font-weight: 650; color: #b9c2cf; }
@@ -305,6 +343,8 @@ export class Vender {
   protected auth = inject(AuthService);
   private catalogo = inject(CatalogoService);
   private toast = inject(Toast);
+  private notinha = inject(NotinhaService);
+  protected abrindoNotinha = signal(false);
 
   protected entrada = signal('');
   protected erroCodigo = signal('');
@@ -404,8 +444,28 @@ export class Vender {
     this.adicionar(item);
   }
 
+  /** A venda ainda está na fila do aparelho (feita sem internet, não enviada)? */
+  protected naFila(id: string) {
+    return this.vendas.fila().some((v) => v.id === id);
+  }
+
+  /** Abre a simulação da notinha da última venda: do servidor, ou do aparelho se não houver internet. */
+  protected async imprimirUltima() {
+    const u = this.c.ultima();
+    if (!u) return;
+    this.abrindoNotinha.set(true);
+    try {
+      const n = await this.notinha.buscar(u.venda.id).catch(() => null);
+      this.notinha.abrir(n ?? this.notinha.dePendente(u.venda, this.naFila(u.venda.id)));
+    } finally {
+      this.abrindoNotinha.set(false);
+    }
+  }
+
   protected adicionar(item: ItemCatalogo) {
     if (this.disponivel(item) <= 0) return this.falhar('Sem estoque para adicionar mais.');
+    // Próxima venda começou: o aviso da anterior sai (a notinha dela continua em Minhas vendas)
+    if (this.c.itens().length === 0) this.c.ultima.set(null);
     this.c.itens.update((l) => {
       const ex = l.find((x) => x.item.variacao_id === item.variacao_id);
       return ex
@@ -441,14 +501,8 @@ export class Vender {
         this.toast.mostrar(r.motivo, 'erro', 6000);
         return;
       }
-      this.toast.mostrar(
-        r.status === 'registrada'
-          ? `Venda registrada · ${formatarBRL(r.total)}`
-          : `Sem internet: venda guardada no aparelho (${formatarBRL(r.total)}). Envio automático quando conectar.`,
-        r.status === 'registrada' ? 'ok' : 'info',
-        r.status === 'registrada' ? 3500 : 6000,
-      );
       this.c.limpar();
+      this.c.ultima.set({ venda: r.venda, total: r.total });
       this.dlgFim().nativeElement.close();
     } finally {
       this.enviando.set(false);

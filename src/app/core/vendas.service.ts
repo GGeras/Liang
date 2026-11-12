@@ -6,8 +6,8 @@ import { AvisoVenda, FormaPagamento, ItemCarrinho, TipoPreco, VendaPendente, pre
 import { ler, salvar } from './cofre';
 
 export type ResultadoVenda =
-  | { status: 'registrada'; total: number }
-  | { status: 'na_fila'; total: number }
+  | { status: 'registrada'; total: number; venda: VendaPendente }
+  | { status: 'na_fila'; total: number; venda: VendaPendente }
   | { status: 'recusada'; motivo: string };
 
 interface RespostaRpc {
@@ -97,7 +97,11 @@ export class VendasService {
         quantidade: c.quantidade,
         codigo: c.item.codigo ?? c.item.codigo_barras,
         nome: `${c.item.nome} · ${c.item.variacao}`,
+        produto: c.item.nome,
+        variacao: c.item.variacao,
+        preco_unitario: precoDe(c.item, tipo),
       })),
+      vendedor_nome: perfil.nome,
       total_previsto: carrinho.reduce((s, c) => s + precoDe(c.item, tipo) * c.quantidade, 0),
       criada_em: new Date().toISOString(),
     };
@@ -107,7 +111,7 @@ export class VendasService {
         const r = await this.enviar(venda, false);
         if (r.ok) {
           await this.catalogo.atualizar();
-          return { status: 'registrada', total: Number(r.total ?? venda.total_previsto) };
+          return { status: 'registrada', total: Number(r.total ?? venda.total_previsto), venda };
         }
         return { status: 'recusada', motivo: motivoRecusa(r) };
       } catch (e) {
@@ -118,7 +122,7 @@ export class VendasService {
     // Sem internet: guarda criptografado e baixa o estoque local
     await this.guardarFila([...this.fila(), venda]);
     await this.catalogo.baixarLocal(venda.itens);
-    return { status: 'na_fila', total: venda.total_previsto };
+    return { status: 'na_fila', total: venda.total_previsto, venda };
   }
 
   private async enviar(v: VendaPendente, offline: boolean): Promise<RespostaRpc> {

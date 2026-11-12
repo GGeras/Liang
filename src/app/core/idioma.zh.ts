@@ -213,6 +213,32 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Usuários': '用户',
   'Vendedores e administradores': '销售员和管理员',
 
+  // Notinha (o recibo em si fica sempre em português: é do cliente)
+  'Notinha': '小票',
+  'Imprimir': '打印',
+  'Imprimir notinha': '打印小票',
+  'Reimprimir': '补打小票',
+  'Ver tamanho real': '查看实际尺寸',
+  'Ajustar à tela': '适应屏幕',
+  'Escala 1:1, com o zoom do navegador em 100%.': '1:1 比例（浏览器缩放需为 100%）。',
+  'A impressora corta aqui': '打印机在此切纸',
+  'Venda guardada no aparelho': '销售单已暂存在本机',
+  'Sem internet: envio automático quando conectar.': '无网络：联网后自动上传。',
+  'Venda não encontrada.': '找不到该销售单。',
+  'Dados da loja': '店铺信息',
+  'Nome, endereço e mensagem da notinha': '小票上的店名、地址和留言',
+  'Cabeçalho e rodapé da notinha': '小票的页眉和页脚',
+  'Nome da loja': '店名',
+  'CNPJ (opcional)': 'CNPJ（可选）',
+  'Endereço': '地址',
+  'Telefone': '电话',
+  'Mensagem de rodapé': '页脚留言',
+  'A notinha sempre termina com “NÃO É DOCUMENTO FISCAL”.': '小票末尾固定印有“NÃO É DOCUMENTO FISCAL”（非税务发票）。',
+  'Ex.: Garantia de 90 dias. Obrigado pela preferência!': '例：Garantia de 90 dias. Obrigado pela preferência!',
+  'Como sai a notinha': '小票打印效果',
+  'Venda de exemplo. Atualiza enquanto você digita.': '示例销售单，输入时实时更新。',
+  'Dados da loja salvos': '店铺信息已保存',
+
   // Movimentações
   'Histórico completo e imutável: toda entrada, venda, ajuste e cancelamento.': '完整且不可修改的记录：所有入库、销售、调整和取消。',
   'Nenhuma movimentação.': '暂无流水。',
@@ -357,6 +383,8 @@ export const TEXTOS_ZH: Record<string, string> = {
 
 /** Textos com partes variáveis: cada {} é um número, nome ou preço. */
 export const MODELOS_ZH: Record<string, string> = {
+  // Notinha
+  'Venda nº {}': '销售单号 {}',
   // Faixas
   'Enviando {} venda(s) guardada(s)…': '正在发送 {} 张暂存的销售单…',
   '{} na fila': '{} 张待发送',

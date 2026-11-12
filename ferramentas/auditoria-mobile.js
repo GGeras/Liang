@@ -48,10 +48,16 @@ const resumo = { faturamento: 128845.5, vendas: 1023, itens: 2441, ticket_medio:
   estoque_baixo: [{ codigo: '01-01', produto: 'Tela iPhone 11', variacao: 'JK', estoque: 0, minimo: 1 }, { codigo: '04-01', produto: 'Bateria Xiaomi Redmi Note 11 Pro BN5E', variacao: 'Padrão', estoque: 4, minimo: 13 }, { codigo: null, codigo_barras: '7890000000124', produto: 'Capa de silicone aveludada iPhone 13', variacao: 'Azul-marinho', estoque: 0, minimo: 2 }],
   valor_estoque: { custo: 14210, varejo: 129870 }, ocorrencias_abertas: 2 };
 const vi = (q, p, cod, nome, v, barras = null) => ({ quantidade: q, preco_unitario: p, variacoes: { nome: v, codigo_barras: barras, produtos: { codigo: cod, nome } } });
+const U = (p) => `${p}-0000-4000-8000-000000000000`;
+const ID = { curta: U('c0a1b2c3'), longa: U('15151515'), nomeLongo: U('a1b2c3d4'), cancelada: U('b1b1b1b1') };
+const quinze = Array.from({ length: 15 }, (_, i) => { const c = cat[i % cat.length]; return vi(i + 1, c.preco_varejo, c.codigo, c.nome, c.variacao, c.codigo_barras); });
 const vendas = [
-  { id: 'a1b2c3d4-0000', cliente_nome: 'Assistência Técnica Cell Center Uberlândia', tipo_preco: 'atacado', forma_pagamento: 'pix', total: 1845, status: 'concluida', criada_em: '2026-11-08T14:10:00Z', offline: true, motivo_cancelamento: null, vendedor: { nome: 'Carlos Eduardo Albuquerque' }, venda_itens: [vi(10, 175, '01-02', 'Tela Samsung Galaxy A32 5G com aro e digitalizador', 'Preta'), vi(5, 19, '03-01', 'Conector de carga Tipo-C', 'Padrão'), vi(2, 12, null, 'Película de vidro 3D Samsung Galaxy A54 5G com borda preta', 'Padrão', '7891234567890')] },
-  { id: 'b1', cliente_nome: 'Maria', tipo_preco: 'varejo', forma_pagamento: 'cartao', total: 120, status: 'cancelada', criada_em: '2026-11-08T12:00:00Z', offline: false, motivo_cancelamento: 'Cliente desistiu da compra após teste no balcão', vendedor: { nome: 'Ana' }, venda_itens: [vi(1, 120, '01-01', 'Tela iPhone 11', 'Incell')] },
+  { id: ID.nomeLongo, cliente_nome: 'Assistência Técnica Cell Center Uberlândia', tipo_preco: 'atacado', forma_pagamento: 'pix', total: 1845, status: 'concluida', criada_em: '2026-11-08T14:10:00Z', offline: true, motivo_cancelamento: null, vendedor: { nome: 'Carlos Eduardo Albuquerque' }, venda_itens: [vi(10, 175, '01-02', 'Tela Samsung Galaxy A32 5G com aro e digitalizador', 'Preta'), vi(5, 19, '03-01', 'Conector de carga Tipo-C', 'Padrão'), vi(2, 12, null, 'Película de vidro 3D Samsung Galaxy A54 5G com borda preta', 'Padrão', '7891234567890')] },
+  { id: ID.cancelada, cliente_nome: 'Maria', tipo_preco: 'varejo', forma_pagamento: 'cartao', total: 120, status: 'cancelada', criada_em: '2026-11-08T12:00:00Z', offline: false, motivo_cancelamento: 'Cliente desistiu da compra após teste no balcão', vendedor: { nome: 'Ana' }, venda_itens: [vi(1, 120, '01-01', 'Tela iPhone 11', 'Incell')] },
+  { id: ID.curta, cliente_nome: 'João', tipo_preco: 'varejo', forma_pagamento: 'dinheiro', total: 18, status: 'concluida', criada_em: '2026-11-08T11:05:00Z', offline: false, motivo_cancelamento: null, vendedor: { nome: 'Ana' }, venda_itens: [vi(1, 18, '03-01', 'Conector de carga Tipo-C', 'Padrão')] },
+  { id: ID.longa, cliente_nome: 'Distribuidora de Peças Triângulo Mineiro Ltda', tipo_preco: 'varejo', forma_pagamento: 'cartao', total: quinze.reduce((s, i) => s + i.quantidade * i.preco_unitario, 0), status: 'concluida', criada_em: '2026-11-08T10:00:00Z', offline: false, motivo_cancelamento: null, vendedor: { nome: 'Carlos Eduardo Albuquerque' }, venda_itens: quinze },
 ];
+const loja = { nome: 'Mundo Mix Peças e Acessórios para Celular', cnpj: '12.345.678/0001-90', endereco: 'Av. Floriano Peixoto, 1234, Loja 2, Centro, Uberlândia/MG, 38400-100', telefone: '(34) 99999-0000', rodape: 'Garantia de 90 dias contra defeito de fábrica mediante esta notinha. Obrigado pela preferência!' };
 const movs = [
   { id: 1, tipo: 'ajuste', quantidade: -3, saldo_apos: 4, custo_unitario: null, motivo: 'Contagem de inventário mensal: 3 telas quebradas no transporte', criado_em: '2026-11-08T13:00:00Z', perfis: { nome: 'Carlos Eduardo Albuquerque' }, variacoes: { nome: 'OLED original retirada', produtos: { codigo: '01-01', nome: 'Tela iPhone 11' } } },
   { id: 2, tipo: 'entrada', quantidade: 120, saldo_apos: 130, custo_unitario: 6, motivo: null, criado_em: '2026-11-08T12:00:00Z', perfis: { nome: 'José' }, variacoes: { nome: 'Padrão', codigo_barras: null, produtos: { codigo: '03-01', nome: 'Conector de carga Tipo-C' } } },
@@ -72,7 +78,9 @@ function resp(u, accept) {
   if (u.includes('/perfis')) return accept.includes('pgrst.object') ? { id: uid, nome: PAPEL === 'admin' ? 'José' : 'Carlos Eduardo Albuquerque', papel: PAPEL, ativo: true } : perfis;
   if (u.includes('vw_catalogo')) return cat;
   if (u.includes('dashboard_resumo')) return resumo;
-  if (u.includes('/vendas')) return vendas;
+  if (u.includes('rpc/registrar_venda')) return { ok: true, total: 100 };
+  if (u.includes('/loja')) return accept.includes('pgrst.object') ? loja : [loja];
+  if (u.includes('/vendas')) { const id = (u.match(/[?&]id=eq.([^&]+)/) || [])[1]; return id ? vendas.filter((v) => v.id === id) : vendas; }
   if (u.includes('/movimentos')) return movs;
   if (u.includes('/ocorrencias')) return ocorr;
   if (u.includes('/tipos')) return tipos;
@@ -81,7 +89,7 @@ function resp(u, accept) {
   return [];
 }
 const telas = PAPEL === 'admin'
-  ? ['/vender', '/catalogo', '/admin/painel', '/admin/estoque', '/admin/mais', '/admin/produtos', '/admin/produtos/01-02', '/admin/produtos/novo', '/admin/vendas', '/admin/movimentos', '/admin/ocorrencias', '/admin/usuarios']
+  ? ['/vender', '/catalogo', '/admin/painel', '/admin/estoque', '/admin/mais', '/admin/produtos', '/admin/produtos/01-02', '/admin/produtos/novo', '/admin/vendas', '/admin/movimentos', '/admin/ocorrencias', '/admin/usuarios', '/admin/loja']
   : ['/vender', '/catalogo', '/minhas-vendas'];
 (async () => {
   const b = await chromium.launch();
@@ -158,6 +166,28 @@ const telas = PAPEL === 'admin'
   await checar('folha-finalizar'); await p.screenshot({ path: `${OUT}/folha-finalizar.png` });
   await p.click('dialog[open] button:has-text("Pix")'); await p.click('text=' + T('Revisar venda')); await p.waitForTimeout(200);
   await checar('folha-confirmar'); await p.screenshot({ path: `${OUT}/folha-confirmar.png` });
+  // Venda sem internet: vai para a fila; o aviso oferece a notinha, que sai como "pendente de envio"
+  await ctx.setOffline(true);
+  await p.click('dialog[open] .btn.ok'); await p.waitForTimeout(600);
+  await checar('vender-venda-guardada'); await p.screenshot({ path: `${OUT}/vender-venda-guardada.png` });
+  await p.click('.feita .btn'); await p.waitForTimeout(700);
+  if (!(await p.locator('dialog[open] .notinha', { hasText: 'Venda pendente de envio' }).count())) console.log('NOTINHA venda offline sem "Venda pendente de envio"');
+  await checar('notinha-pendente-offline'); await p.screenshot({ path: `${OUT}/notinha-pendente-offline.png` });
+  await p.click('dialog[open] .acoes .btn.sec'); await p.waitForTimeout(200);
+  await ctx.setOffline(false); await p.waitForTimeout(400);
+  // Simulação de vendas reais: curta, 15 itens, nome longo e cancelada
+  for (const [nome, id] of Object.entries({ curta: ID.curta, '15-itens': ID.longa, 'nome-longo': ID.nomeLongo, cancelada: ID.cancelada })) {
+    await p.goto('http://localhost:4301/notinha/' + id); await p.waitForTimeout(700);
+    if (!(await p.locator('.notinha').count())) console.log('NOTINHA', nome, 'não abriu');
+    if (nome === 'cancelada' && !(await p.locator('.notinha .nt-marca', { hasText: 'CANCELADA' }).count())) console.log('NOTINHA cancelada sem a marca CANCELADA');
+    await checar('notinha-' + nome); await p.screenshot({ path: `${OUT}/notinha-${nome}.png`, fullPage: true });
+  }
+  await p.click('app-simulacao-notinha .controles .btn'); await p.waitForTimeout(300);
+  await p.screenshot({ path: `${OUT}/notinha-tamanho-real.png`, fullPage: true });
+  // Reimprimir pela lista de vendas abre a folha da notinha
+  await p.goto('http://localhost:4301' + (PAPEL === 'admin' ? '/admin/vendas' : '/minhas-vendas')); await p.waitForTimeout(700);
+  await p.click('.venda .btn:has(i-con[nome="imprimir"]) >> nth=0'); await p.waitForTimeout(500);
+  await checar('folha-notinha'); await p.screenshot({ path: `${OUT}/folha-notinha.png` });
   if (PAPEL === 'admin') {
     await p.goto('http://localhost:4301/admin/estoque'); await p.waitForTimeout(600);
     await p.click('.linha >> nth=1'); await p.waitForTimeout(200);

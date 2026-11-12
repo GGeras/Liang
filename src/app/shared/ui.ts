@@ -57,6 +57,10 @@ const ICONES: Record<string, string> = {
   usuarios: 'M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM22 19v-1a4 4 0 0 0-3-3.9M16 4.1a3 3 0 0 1 0 5.8',
   baixar: 'M12 4v12M6 10l6 6 6-6M4 20h16',
   check: 'M5 12l5 5L20 7',
+  imprimir: 'M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 13h10v8H7z',
+  regua: 'M3 15 15 3l6 6L9 21zM7 11l2 2M10 8l2 2M13 5l2 2',
+  ajustar: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+  loja: 'M3 9l1.5-5h15L21 9M3 9v11h18V9M3 9h18M9 20v-6h6v6',
 };
 
 @Component({

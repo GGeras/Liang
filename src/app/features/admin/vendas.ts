@@ -2,9 +2,9 @@ import { Component, ElementRef, inject, signal, viewChild } from '@angular/core'
 import { FormsModule } from '@angular/forms';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { CatalogoService } from '../../core/catalogo.service';
-import { PAGAMENTOS } from '../../core/models';
+import { PAGAMENTOS, SELECT_VENDA, VendaLinha } from '../../core/models';
 import { BrlPipe, DataHoraPipe, Icone, Toast } from '../../shared/ui';
-import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
+import { NotinhaService, notinhaDeLinha } from '../../core/notinha.service';
 
 @Component({
   selector: 'app-vendas-admin',
@@ -49,9 +49,13 @@ import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
             </ul>
             @if (v.status === 'cancelada') {
               <p class="nota-cancelada">Cancelada: {{ v.motivo_cancelamento }}</p>
-            } @else {
-              <button class="btn sec pequeno cancelar" (click)="abrirCancelar(v)">Cancelar venda</button>
             }
+            <div class="acoes-venda">
+              <button type="button" class="btn sec pequeno" (click)="notinha.abrir(deLinha(v))"><i-con nome="imprimir" /> Reimprimir</button>
+              @if (v.status !== 'cancelada') {
+                <button type="button" class="btn sec pequeno" (click)="abrirCancelar(v)">Cancelar venda</button>
+              }
+            </div>
           </li>
         } @empty {
           @if (!carregando()) {
@@ -92,7 +96,7 @@ import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
     .topo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: start; }
     .itens { margin: .2rem 0 0; padding: 0; list-style: none; font-size: .88rem; display: grid; gap: .2rem; }
     .itens li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .4rem; }
-    .cancelar { justify-self: start; margin-top: .25rem; }
+    .acoes-venda { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .25rem; }
     .topo-folha { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
     .form { display: grid; gap: 1rem; margin-top: 1rem; }
   `,
@@ -100,6 +104,8 @@ import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
 export class VendasAdmin {
   private toast = inject(Toast);
   private catalogo = inject(CatalogoService);
+  protected notinha = inject(NotinhaService);
+  protected deLinha = notinhaDeLinha;
   protected pag = PAGAMENTOS;
   protected lista = signal<VendaLinha[]>([]);
   protected vendedores = signal<{ id: string; nome: string }[]>([]);

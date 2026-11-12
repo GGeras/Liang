@@ -1,9 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
-import { PAGAMENTOS } from '../../core/models';
+import { PAGAMENTOS, SELECT_VENDA, VendaLinha } from '../../core/models';
 import { BrlPipe, Ident, Icone, IntPipe, Toast, baixarCsv } from '../../shared/ui';
-import { SELECT_VENDA, VendaLinha } from '../vendedor/minhas-vendas';
 
 interface Resumo {
   faturamento: number;

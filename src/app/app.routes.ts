@@ -14,6 +14,7 @@ export const routes: Routes = [
       { path: 'vender', loadComponent: () => import('./features/vendedor/vender').then((m) => m.Vender) },
       { path: 'catalogo', loadComponent: () => import('./features/vendedor/catalogo').then((m) => m.Catalogo) },
       { path: 'minhas-vendas', loadComponent: () => import('./features/vendedor/minhas-vendas').then((m) => m.MinhasVendas) },
+      { path: 'notinha/:id', loadComponent: () => import('./features/notinha-pagina').then((m) => m.NotinhaPagina) },
       {
         path: 'admin',
         canActivate: [adminGuard],
@@ -29,6 +30,7 @@ export const routes: Routes = [
           { path: 'ocorrencias', loadComponent: () => import('./features/admin/ocorrencias').then((m) => m.Ocorrencias) },
           { path: 'usuarios', loadComponent: () => import('./features/admin/usuarios').then((m) => m.Usuarios) },
           { path: 'mais', loadComponent: () => import('./features/admin/mais').then((m) => m.Mais) },
+          { path: 'loja', loadComponent: () => import('./features/admin/dados-loja').then((m) => m.DadosLojaPagina) },
         ],
       },
     ],
