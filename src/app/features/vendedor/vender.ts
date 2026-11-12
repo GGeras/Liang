@@ -5,6 +5,7 @@ import { CatalogoService, normalizarCodigo } from '../../core/catalogo.service';
 import { VendasService } from '../../core/vendas.service';
 import { AuthService } from '../../core/auth.service';
 import { AtualizacaoService } from '../../core/atualizacao.service';
+import { RascunhoService } from '../../core/rascunho.service';
 import {
   FormaPagamento,
   ItemCarrinho,
@@ -16,10 +17,22 @@ import {
   precoDe,
 } from '../../core/models';
 import { NotinhaService } from '../../core/notinha.service';
+import { mensagemErro } from '../../core/supabase';
 import { BrlPipe, Ident, Icone, Toast, identTexto } from '../../shared/ui';
 import { Scanner } from '../../shared/scanner';
 
-/** Carrinho fica vivo enquanto o vendedor navega entre as abas. */
+interface RascunhoVenda {
+  itens: ItemCarrinho[];
+  tipo: TipoPreco;
+  cliente: string;
+  pagamento: FormaPagamento | null;
+  ultima: { venda: VendaPendente; total: number } | null;
+}
+
+/**
+ * Carrinho fica vivo enquanto o vendedor navega entre as abas, e guardado no
+ * aparelho (rascunho): se o app recarregar no meio da venda, nada se perde.
+ */
 @Injectable({ providedIn: 'root' })
 export class CarrinhoService {
   readonly itens = signal<ItemCarrinho[]>([]);
@@ -34,8 +47,9 @@ export class CarrinhoService {
   constructor() {
     const auth = inject(AuthService);
     const catalogo = inject(CatalogoService);
-    // Venda em andamento: a versão nova do app espera o carrinho esvaziar
-    this.atualizacao.bloquear(() => this.itens().length > 0 || !!this.cliente().trim() || !!this.ultima());
+    // Venda em andamento: a versão nova do app espera o carrinho esvaziar.
+    // O aviso da última venda não segura mais: ele volta do rascunho depois de atualizar.
+    this.atualizacao.bloquear(() => this.itens().length > 0 || !!this.cliente().trim());
     // O carrinho é de quem está logado: trocou de usuário no aparelho, começa vazio
     let dono: string | undefined;
     effect(() => {
@@ -59,6 +73,24 @@ export class CarrinhoService {
           }),
         ),
       );
+    });
+    inject(RascunhoService).vincular<RascunhoVenda>('venda', {
+      estado: () => {
+        const r: RascunhoVenda = { itens: this.itens(), tipo: this.tipo(), cliente: this.cliente(), pagamento: this.pagamento(), ultima: this.ultima() };
+        return r.itens.length || r.cliente.trim() || r.ultima ? r : null;
+      },
+      restaurar: (r) => {
+        // Preço e estoque de agora; item que saiu do catálogo não volta
+        const mapa = new Map(catalogo.itens().map((i) => [i.variacao_id, i]));
+        const itens = mapa.size ? r.itens.flatMap((x) => (mapa.has(x.item.variacao_id) ? [{ ...x, item: mapa.get(x.item.variacao_id)! }] : [])) : r.itens;
+        // Só se o vendedor ainda não começou outra venda enquanto o rascunho era lido
+        if (this.itens().length || this.cliente().trim()) return;
+        this.itens.set(itens);
+        this.tipo.set(r.tipo);
+        this.cliente.set(r.cliente);
+        this.pagamento.set(r.pagamento && pagamentosPermitidos(r.tipo).includes(r.pagamento) ? r.pagamento : null);
+        if (!this.ultima()) this.ultima.set(r.ultima);
+      },
     });
   }
 
@@ -504,6 +536,9 @@ export class Vender {
       this.c.limpar();
       this.c.ultima.set({ venda: r.venda, total: r.total });
       this.dlgFim().nativeElement.close();
+    } catch (e) {
+      // Ex.: memória do aparelho cheia ao guardar a venda offline. O carrinho continua.
+      this.toast.mostrar(`A venda não foi registrada: ${mensagemErro(e)}`, 'erro', 6000);
     } finally {
       this.enviando.set(false);
     }

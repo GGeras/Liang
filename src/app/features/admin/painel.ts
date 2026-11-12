@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { PAGAMENTOS, SELECT_VENDA, VendaLinha } from '../../core/models';
 import { BrlPipe, Ident, Icone, IntPipe, Toast, baixarCsv } from '../../shared/ui';
+import { Ajuda } from '../../shared/ajuda';
 
 interface Resumo {
   faturamento: number;
@@ -56,7 +57,7 @@ function intervalo(p: Periodo): [Date, Date] {
 
 @Component({
   selector: 'app-painel',
-  imports: [BrlPipe, Ident, IntPipe, RouterLink, Icone],
+  imports: [BrlPipe, Ident, IntPipe, RouterLink, Icone, Ajuda],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -91,7 +92,7 @@ function intervalo(p: Periodo): [Date, Date] {
             <div><span class="num">{{ r.ticket_medio | brl }}</span><span class="muted small">ticket médio</span></div>
             <div>
               <span class="num">{{ r.lucro_estimado | brl }}</span>
-              <span class="muted small">lucro estimado</span>
+              <span class="muted small rotulo-ajuda">lucro estimado<app-ajuda sobre="Lucro estimado" texto="Faturamento menos o custo cadastrado dos itens vendidos; itens sem custo ficam de fora da conta." /></span>
             </div>
           </div>
           @if (r.itens_sem_custo > 0) {
@@ -187,6 +188,7 @@ function intervalo(p: Periodo): [Date, Date] {
     .ocorrencia { display: flex; gap: .7rem; align-items: center; padding: .85rem 1rem; border-radius: var(--r-md); background: var(--danger-bg); color: var(--danger); text-decoration: none; }
     .destaque { background: var(--ink); color: #fff; border-radius: var(--r-lg); padding: 1.1rem 1rem; display: grid; gap: .2rem; }
     .destaque .muted { color: #b9c2cf; }
+    .destaque app-ajuda { --ajuda-cor: #fff; --ajuda-fundo: var(--ink); }
     .valor { font-size: clamp(1.7rem, 9vw, 2.4rem); font-weight: 800; font-stretch: 118%; line-height: 1.1; }
     .mini { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; margin-top: .9rem; padding-top: .9rem; border-top: 1px solid #2f3b4d; }
     .mini div { display: grid; }
@@ -245,6 +247,9 @@ export class Painel {
   protected exportando = signal(false);
   protected maxDia = computed(() => Math.max(1, ...(this.r()?.por_dia.map((d) => Number(d.total)) ?? [1])));
 
+  /** Período trocado antes de a resposta chegar: só a do período atual vale. */
+  private consulta = 0;
+
   constructor() {
     this.carregar();
   }
@@ -260,9 +265,11 @@ export class Painel {
   }
 
   private async carregar() {
+    const vez = ++this.consulta;
     this.erro.set('');
     const [ini, fim] = intervalo(this.periodo());
     const { data, error } = await supabase.rpc('dashboard_resumo', { p_inicio: ini.toISOString(), p_fim: fim.toISOString() });
+    if (vez !== this.consulta) return;
     if (error) return this.erro.set(mensagemErro(error));
     this.r.set(data as Resumo);
   }

@@ -4,10 +4,11 @@ import { supabase, mensagemErro } from '../../core/supabase';
 import { AuthService } from '../../core/auth.service';
 import { Papel, Perfil } from '../../core/models';
 import { Icone, Toast } from '../../shared/ui';
+import { Ajuda } from '../../shared/ajuda';
 
 @Component({
   selector: 'app-usuarios',
-  imports: [FormsModule, Icone],
+  imports: [FormsModule, Icone, Ajuda],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -47,14 +48,14 @@ import { Icone, Toast } from '../../shared/ui';
           <label class="campo"><span>E-mail de acesso</span><input type="email" inputmode="email" [ngModel]="email()" (ngModelChange)="email.set($event)" /></label>
         }
         <div class="campo">
-          <span>Perfil</span>
+          <span class="rotulo-ajuda"><span>Perfil</span><app-ajuda sobre="Perfil" texto="Vendedor vende e vê só as próprias vendas; Administrador também cuida de estoque, produtos, vendas e usuários." /></span>
           <div class="segmento" role="group" aria-label="Perfil">
             <button [attr.aria-pressed]="papel() === 'vendedor'" (click)="papel.set('vendedor')" [disabled]="proprio()">Vendedor</button>
             <button [attr.aria-pressed]="papel() === 'admin'" (click)="papel.set('admin')" [disabled]="proprio()">Administrador</button>
           </div>
         </div>
         @if (sel()) {
-          <label class="ativo"><input type="checkbox" [ngModel]="ativo()" (ngModelChange)="ativo.set($event)" [disabled]="proprio()" /> Acesso ativo</label>
+          <span class="linha-ajuda"><label class="ativo"><input type="checkbox" [ngModel]="ativo()" (ngModelChange)="ativo.set($event)" [disabled]="proprio()" /> Acesso ativo</label><app-ajuda sobre="Acesso ativo" texto="Desmarque para bloquear a entrada desta pessoa sem apagar as vendas e o histórico dela." /></span>
           <button class="btn bloco" (click)="salvarPerfil()" [disabled]="salvando()">Salvar</button>
           <hr />
         }

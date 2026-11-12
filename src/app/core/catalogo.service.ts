@@ -49,6 +49,8 @@ export class CatalogoService {
   });
 
   private iniciado = false;
+  /** Número da última busca: só a mais recente vale (uma antiga não desfaz uma entrada recém-feita). */
+  private busca = 0;
 
   async iniciar() {
     if (this.iniciado) return;
@@ -64,6 +66,7 @@ export class CatalogoService {
   /** Busca o catálogo completo no servidor e guarda criptografado no aparelho. */
   async atualizar(): Promise<boolean> {
     if (!navigator.onLine) return false;
+    const vez = ++this.busca;
     this.carregando.set(true);
     try {
       const todos: ItemCatalogo[] = [];
@@ -79,6 +82,7 @@ export class CatalogoService {
         todos.push(...(data as ItemCatalogo[]));
         if (!data || data.length < passo) break;
       }
+      if (vez !== this.busca) return true;
       const em = new Date().toISOString();
       this.itens.set(todos);
       this.atualizadoEm.set(em);
@@ -87,7 +91,7 @@ export class CatalogoService {
     } catch {
       return false;
     } finally {
-      this.carregando.set(false);
+      if (vez === this.busca) this.carregando.set(false);
     }
   }
 

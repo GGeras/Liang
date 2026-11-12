@@ -301,6 +301,19 @@ li {
   box-shadow: 0 0 0 3px rgb(35 64 200 / 0.3);
 }
 
+/* Rótulo com o botão de ajuda (?) ao lado. O "?" fica fora do <label>,
+   senão entraria no nome do campo lido pelo leitor de tela. */
+.rotulo-ajuda,
+.linha-ajuda {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.2rem;
+}
+.rotulo-ajuda label {
+  color: inherit;
+}
+
 /* Texto só para leitor de tela */
 .sr-only {
   position: absolute;
