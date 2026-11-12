@@ -232,7 +232,6 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Nome, endereço e mensagem da notinha': '小票上的店名、地址和留言',
   'Cabeçalho e rodapé da notinha': '小票的页眉和页脚',
   'Nome da loja': '店名',
-  'CNPJ (opcional)': 'CNPJ（可选）',
   'Endereço': '地址',
   'Telefone': '电话',
   'Mensagem de rodapé': '页脚留言',
@@ -241,7 +240,6 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Como sai a notinha': '小票打印效果',
   'Venda de exemplo. Atualiza enquanto você digita.': '示例销售单，输入时实时更新。',
   'Dados da loja salvos': '店铺信息已保存',
-  'Se for celular com DDD, a notinha traz um QR code que abre o WhatsApp da loja.': '如填写带区号的手机号，小票会印有可打开店铺 WhatsApp 的二维码。',
 
   // Movimentações
   'Histórico completo e imutável: toda entrada, venda, ajuste e cancelamento.': '完整且不可修改的记录：所有入库、销售、调整和取消。',

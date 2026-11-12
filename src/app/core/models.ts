@@ -105,13 +105,12 @@ export const SELECT_VENDA =
 /** Cabeçalho e rodapé da notinha (tabela `loja`, uma linha só). */
 export interface DadosLoja {
   nome: string;
-  cnpj: string | null;
   endereco: string;
   telefone: string;
   rodape: string;
 }
 
-export const LOJA_PADRAO: DadosLoja = { nome: 'Mundo Mix', cnpj: null, endereco: '', telefone: '', rodape: '' };
+export const LOJA_PADRAO: DadosLoja = { nome: 'Mundo Mix', endereco: '', telefone: '', rodape: '' };
 
 /** Tudo o que a notinha imprime, venha a venda do servidor ou da fila do aparelho. */
 export interface NotinhaVenda {
