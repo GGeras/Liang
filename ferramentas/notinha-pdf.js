@@ -2,6 +2,7 @@
 // "Imprimir") e compara com a simulação em tamanho real, pixel a pixel.
 // Uso:  npm run build && node ferramentas/notinha-pdf.js [pasta]
 // Requer o pdf.js para rasterizar o PDF (não entra no package.json):  npm i --no-save pdfjs-dist@4.10.38
+// Opcional, para ler o QR do WhatsApp no PDF:  npm i --no-save jsqr@1.4.0
 // Saída por venda: <nome>.pdf, <nome>-comparacao.png (PDF | simulação | diferença em vermelho).
 // Os dois lados viram preto e branco antes de comparar, como na térmica (ela não imprime cinza).
 const { chromium } = require('playwright');
@@ -9,6 +10,10 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const OUT = process.argv[2] || path.join(__dirname, '..', '.auditoria', 'notinha-pdf');
 fs.mkdirSync(OUT, { recursive: true });
 const root = path.join(__dirname, '..', 'dist', 'liang', 'browser');
+let jsqr = null;
+try {
+  jsqr = require.resolve('jsqr/dist/jsQR.js');
+} catch {}
 let pdfjs;
 try {
   pdfjs = path.dirname(require.resolve('pdfjs-dist/build/pdf.min.mjs'));
@@ -45,6 +50,7 @@ const srv = http.createServer((q, r) => {
   const url = decodeURIComponent(q.url.split('?')[0]);
   if (url === '/__notinha.pdf') { r.setHeader('Content-Type', 'application/pdf'); return r.end(pdfAtual); }
   if (url.startsWith('/__pdfjs/')) { r.setHeader('Content-Type', 'text/javascript'); return fs.createReadStream(path.join(pdfjs, url.slice(9))).pipe(r); }
+  if (url === '/__jsqr.js' && jsqr) { r.setHeader('Content-Type', 'text/javascript'); return fs.createReadStream(jsqr).pipe(r); }
   if (url === '/__comparar.html') { r.setHeader('Content-Type', 'text/html'); return r.end('<!doctype html><body></body>'); }
   let f = path.join(root, url);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) f = path.join(root, 'index.html');
@@ -87,6 +93,7 @@ const DPR = 2, PX_MM = 96 / 25.4;
     const [, , wPt, hPt] = caixas[0];
     const wMm = (wPt / 72) * 25.4, hMm = (hPt / 72) * 25.4;
 
+    if (jsqr && !(await cmp.evaluate(() => 'jsQR' in window))) await cmp.addScriptTag({ url: '/__jsqr.js' });
     const r = await cmp.evaluate(async ({ simB64, dpr }) => {
       const pdfjsLib = await import('/__pdfjs/pdf.min.mjs');
       pdfjsLib.GlobalWorkerOptions.workerSrc = '/__pdfjs/pdf.worker.min.mjs';
@@ -127,13 +134,16 @@ const DPR = 2, PX_MM = 96 / 25.4;
         } else if (p1) pinta(x + 2 * W + 40, y, [190, 190, 190, 255]);
       }
       ox.putImageData(od, 0, 0);
-      return { png: out.toDataURL('image/png').split(',')[1], tinta, diferente, isolado, wPdf: cp.width, hPdf: cp.height, wSim: cs.width, hSim: cs.height };
+      // QR do WhatsApp lido do próprio PDF (o que a impressora recebe)
+      let qr = null;
+      if (window.jsQR) qr = window.jsQR(a.data, cp.width, cp.height)?.data ?? 'nenhum';
+      return { qr, png: out.toDataURL('image/png').split(',')[1], tinta, diferente, isolado, wPdf: cp.width, hPdf: cp.height, wSim: cs.width, hSim: cs.height };
     }, { simB64: sim.toString('base64'), dpr: DPR });
     fs.writeFileSync(`${OUT}/${nome}-comparacao.png`, Buffer.from(r.png, 'base64'));
     const pct = ((100 * r.isolado) / Math.max(1, r.tinta)).toFixed(2).replace('.', ',');
     const ok = caixas.length === 1 && Math.abs(wMm - 80) < 0.3 && Math.abs(hMm - altSimMm) < 1 /* a altura da página é arredondada para cima em 0,5 mm */ && r.isolado / Math.max(1, r.tinta) < 0.002;
     if (!ok) falhou = true;
-    console.log(`${ok ? 'IGUAL' : 'DIFERENTE'} ${nome}: PDF ${caixas.length} página(s) de ${wMm.toFixed(1)} × ${hMm.toFixed(1)} mm · simulação ${altSimMm.toFixed(1)} mm de altura · diferença ${pct}% da tinta (deslocamentos de até 0,4 mm na borda das letras: ignorados)`);
+    console.log(`${ok ? 'IGUAL' : 'DIFERENTE'} ${nome}: PDF ${caixas.length} página(s) de ${wMm.toFixed(1)} × ${hMm.toFixed(1)} mm · simulação ${altSimMm.toFixed(1)} mm de altura · diferença ${pct}% da tinta (deslocamentos de até 0,4 mm na borda das letras: ignorados)${r.qr ? ' · QR: ' + r.qr : ''}`);
   }
   console.log(`Arquivos em ${OUT}`);
   await b.close(); srv.close();

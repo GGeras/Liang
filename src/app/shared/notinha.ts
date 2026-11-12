@@ -1,6 +1,18 @@
 import { Component, computed, input } from '@angular/core';
 import { DadosLoja, NotinhaVenda, PAGAMENTOS } from '../core/models';
+import { encode } from 'uqr';
 import { BrlPipe } from './ui';
+
+/**
+ * Número do WhatsApp a partir do telefone da loja: só celular brasileiro com DDD
+ * (11 dígitos, o terceiro é 9). Telefone fixo ou vazio: sem QR.
+ */
+export function whatsappDe(telefone: string): string | null {
+  let d = telefone.replace(/\D/g, '');
+  if (d.length === 13 && d.startsWith('55')) d = d.slice(2);
+  if (d.length === 12 && d.startsWith('0')) d = d.slice(1);
+  return /^[1-9]{2}9\d{8}$/.test(d) ? '55' + d : null;
+}
 
 const dataCompleta = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
@@ -33,17 +45,36 @@ export const numeroCurto = (id: string) => id.slice(0, 8).toUpperCase();
   host: { translate: 'no' },
   template: `
     <article class="notinha" [attr.aria-label]="'Notinha da venda ' + numero()">
-      <header class="nt-loja">
-        <p class="nt-nome">{{ loja().nome }}</p>
-        @if (loja().endereco) {
-          <p class="nt-endereco">
-            @for (parte of enderecoPartes(); track $index) {
-              <span class="nt-junto">{{ parte }}</span>{{ ' ' }}
-            }
-          </p>
-        }
-        @if (loja().telefone) {
-          <p>{{ loja().telefone }}</p>
+      <!-- Com WhatsApp: texto à esquerda (mesmo eixo do resto da notinha) e o QR ao lado do número -->
+      <header class="nt-loja" [class.nt-loja-qr]="qr()">
+        <div class="nt-loja-texto">
+          <p class="nt-nome">{{ loja().nome }}</p>
+          @if (loja().endereco) {
+            <p class="nt-endereco">
+              @if (qr()) {
+                @for (linha of enderecoLinhas(); track $index) {
+                  <span class="nt-end-linha">{{ linha }}</span>
+                }
+              } @else {
+                @for (parte of enderecoPartes(); track $index) {
+                  <span class="nt-junto">{{ parte }}</span>{{ ' ' }}
+                }
+              }
+            </p>
+          }
+          @if (loja().telefone) {
+            <p class="nt-fone">
+              @if (qr()) {
+                <span>WhatsApp</span>{{ ' ' }}
+              }
+              <b class="nt-num">{{ loja().telefone }}</b>
+            </p>
+          }
+        </div>
+        @if (qr(); as q) {
+          <svg class="nt-qr" [attr.viewBox]="'0 0 ' + q.tamanho + ' ' + q.tamanho" shape-rendering="crispEdges" role="img" aria-label="QR code do WhatsApp da loja">
+            <path [attr.d]="q.d" />
+          </svg>
         }
       </header>
 
@@ -60,7 +91,6 @@ export const numeroCurto = (id: string) => id.slice(0, 8).toUpperCase();
         <div><dt>Data</dt><dd class="nt-num">{{ data() }}</dd></div>
         <div><dt>Vendedor</dt><dd>{{ venda().vendedor || '—' }}</dd></div>
         <div><dt>Cliente</dt><dd>{{ venda().cliente }}</dd></div>
-        <div><dt>Preço</dt><dd>{{ venda().tipo_preco === 'atacado' ? 'Atacado' : 'Varejo' }}</dd></div>
       </dl>
 
       <hr class="nt-sep" />
@@ -126,6 +156,19 @@ export class Notinha {
    * que vem depois ("Rua X, 245 - Centro," "Uberlândia - MG, 38400-104"):
    * a linha só quebra entre esses pedaços, nunca no meio deles.
    */
+  /**
+   * Na coluna ao lado do QR o endereço sai como em envelope: rua e número,
+   * bairro e cidade, CEP ("Rua X, 221 - Centro, Uberlândia - MG, 38400-104").
+   * Quebra no " - " logo depois do número e na vírgula antes do CEP; o traço e
+   * a vírgula somem, porque a própria linha já separa.
+   */
+  protected enderecoLinhas = computed(() =>
+    this.loja()
+      .endereco.split(/(?<=\d)\s+-\s+|,\s*(?=\d{5}-?\d{3}\b)/)
+      .map((l) => l.trim())
+      .filter(Boolean),
+  );
+
   protected enderecoPartes = computed(() =>
     this.loja()
       .endereco.split(/(?<=,)\s+(?!\d)/)
@@ -154,6 +197,16 @@ export class Notinha {
     }
     // Itens sem tipo conhecido (venda antiga do aparelho) vão para o fim, sem título
     return [...grupos.filter((g) => g.tipo), ...grupos.filter((g) => !g.tipo)];
+  });
+
+  /** QR que abre a conversa no WhatsApp da loja (gerado aqui, funciona sem internet). */
+  protected qr = computed(() => {
+    const numero = whatsappDe(this.loja().telefone);
+    if (!numero) return null;
+    const { data, size } = encode(`https://wa.me/${numero}`, { ecc: 'M', border: 0 });
+    let d = '';
+    data.forEach((linha, y) => linha.forEach((preto, x) => preto && (d += `M${x} ${y}h1v1h-1z`)));
+    return { tamanho: size, d };
   });
 
   protected numero = computed(() => numeroCurto(this.venda().id));
