@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 import { DadosLoja, LOJA_PADRAO } from './models';
 import { ler, salvar } from './cofre';
 
-const CAMPOS = 'nome, cnpj, endereco, telefone, rodape';
+const CAMPOS = 'nome, endereco, telefone, rodape';
 
 /**
  * Dados da loja que vão no cabeçalho e no rodapé da notinha.
@@ -36,7 +36,6 @@ export class LojaService {
   async gravar(d: DadosLoja): Promise<void> {
     const limpo: DadosLoja = {
       nome: d.nome.trim(),
-      cnpj: d.cnpj?.trim() || null,
       endereco: d.endereco.trim(),
       telefone: d.telefone.trim(),
       rodape: d.rodape.trim(),

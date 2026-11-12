@@ -10,12 +10,6 @@ import { Rascunho, RascunhoService } from '../../core/rascunho.service';
 import { AvisoRascunho } from '../../shared/aviso-rascunho';
 import { Toast } from '../../shared/ui';
 
-/** "12345678000190" → "12.345.678/0001-90"; outro formato fica como foi digitado. */
-function formatarCnpj(v: string): string {
-  const d = v.replace(/\D/g, '');
-  return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : v.trim();
-}
-
 /** Mais › Dados da loja: cabeçalho e rodapé da notinha, com a simulação ao lado. */
 @Component({
   selector: 'app-dados-loja',
@@ -40,17 +34,12 @@ function formatarCnpj(v: string): string {
             <input name="nome" [ngModel]="nome()" (ngModelChange)="nome.set($event)" maxlength="60" required autocomplete="organization" />
           </label>
           <label class="campo">
-            <span>CNPJ (opcional)</span>
-            <input name="cnpj" [ngModel]="cnpj()" (ngModelChange)="cnpj.set($event)" (blur)="cnpj.set(formatar(cnpj()))" maxlength="20" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00" />
-          </label>
-          <label class="campo">
             <span>Endereço</span>
             <textarea name="endereco" [ngModel]="endereco()" (ngModelChange)="endereco.set($event)" maxlength="200" rows="2" autocomplete="street-address"></textarea>
           </label>
           <label class="campo">
             <span>Telefone</span>
-            <input name="telefone" [ngModel]="telefone()" (ngModelChange)="telefone.set($event)" maxlength="30" inputmode="tel" autocomplete="tel" aria-describedby="dica-telefone" />
-            <small id="dica-telefone" class="dica-campo">Se for celular com DDD, a notinha traz um QR code que abre o WhatsApp da loja.</small>
+            <input name="telefone" [ngModel]="telefone()" (ngModelChange)="telefone.set($event)" maxlength="30" inputmode="tel" autocomplete="tel" />
           </label>
           <label class="campo">
             <span>Mensagem de rodapé</span>
@@ -74,7 +63,6 @@ function formatarCnpj(v: string): string {
     .pagina.larga { max-width: 1100px; }
     .duas { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
     .form { display: grid; gap: 1rem; }
-    .dica-campo { font-size: .85rem; color: var(--muted); }
     .previa { display: grid; gap: .4rem; }
     .previa app-simulacao-notinha { margin-top: .35rem; }
     @media (min-width: 900px) {
@@ -89,17 +77,14 @@ export class DadosLojaPagina {
   private toast = inject(Toast);
 
   protected nome = signal('');
-  protected cnpj = signal('');
   protected endereco = signal('');
   protected telefone = signal('');
   protected rodape = signal('');
   protected salvando = signal(false);
-  protected formatar = formatarCnpj;
 
   /** O que está no formulário agora (alimenta a simulação). */
   protected rascunho = computed<DadosLoja>(() => ({
     nome: this.nome().trim() || 'Nome da loja',
-    cnpj: this.cnpj().trim() || null,
     endereco: this.endereco().trim(),
     telefone: this.telefone().trim(),
     rodape: this.rodape().trim(),
@@ -111,7 +96,6 @@ export class DadosLojaPagina {
   private igualA(d: DadosLoja): boolean {
     return (
       this.nome().trim() === d.nome &&
-      (this.cnpj().trim() || null) === (d.cnpj || null) &&
       this.endereco().trim() === d.endereco &&
       this.telefone().trim() === d.telefone &&
       this.rodape().trim() === d.rodape
@@ -162,12 +146,11 @@ export class DadosLojaPagina {
 
   /** O formulário como está, sem os ajustes da simulação. */
   private rascunhoForm(): DadosLoja {
-    return { nome: this.nome(), cnpj: this.cnpj() || null, endereco: this.endereco(), telefone: this.telefone(), rodape: this.rodape() };
+    return { nome: this.nome(), endereco: this.endereco(), telefone: this.telefone(), rodape: this.rodape() };
   }
 
   private preencher(d: DadosLoja) {
     this.nome.set(d.nome);
-    this.cnpj.set(d.cnpj ?? '');
     this.endereco.set(d.endereco);
     this.telefone.set(d.telefone);
     this.rodape.set(d.rodape);
@@ -184,7 +167,6 @@ export class DadosLojaPagina {
     try {
       await this.loja.gravar({
         nome: this.nome(),
-        cnpj: formatarCnpj(this.cnpj()) || null,
         endereco: this.endereco(),
         telefone: this.telefone(),
         rodape: this.rodape(),

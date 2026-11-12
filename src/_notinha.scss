@@ -152,29 +152,12 @@ app-notinha {
   margin-top: var(--nt-linha) !important;
 }
 
-/* Rodapé: mensagem da loja e QR do WhatsApp */
+/* Rodapé: mensagem da loja */
 .nt-rodape {
   text-align: center;
   font-size: 11px;
   display: grid;
   gap: var(--nt-bloco);
-}
-.nt-qr {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 3mm;
-  text-align: left;
-  svg {
-    flex: none;
-    width: 18mm;
-    height: 18mm;
-    fill: #000;
-  }
-  b {
-    font-size: 12px;
-    font-weight: 800;
-  }
 }
 .nt-fiscal {
   text-align: center;
