@@ -41,6 +41,7 @@ export class Mais {
   protected itens = [
     { rota: '/admin/produtos', nome: 'Produtos e catálogo', desc: 'Cadastrar e editar produtos, preços, tipos e compatibilidades', icone: 'catalogo' },
     { rota: '/admin/vendas', nome: 'Vendas', desc: 'Todas as vendas, por vendedor; cancelamentos', icone: 'vender' },
+    { rota: '/consultar', nome: 'Consultar código', desc: 'Venda, cancelamento, entrada ou ajuste pelo número', icone: 'lupa' },
     { rota: '/admin/movimentos', nome: 'Movimentações', desc: 'Histórico de entradas, saídas e ajustes', icone: 'historico' },
     { rota: '/admin/ocorrencias', nome: 'Ocorrências', desc: 'Vendas recusadas por falta de estoque', icone: 'alerta' },
     { rota: '/admin/usuarios', nome: 'Usuários', desc: 'Vendedores e administradores', icone: 'usuarios' },

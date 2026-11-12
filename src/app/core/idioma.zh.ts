@@ -130,6 +130,8 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Buscar no catálogo': '搜索商品',
   'Buscar por código, nome, marca ou modelo': '按编码、名称、品牌或型号搜索',
   'Filtrar por tipo': '按类别筛选',
+  'Voltar para os tipos': '返回类别列表',
+  '1 produto': '1 个商品',
   'Detalhes do produto': '商品详情',
   'Compatível com': '适用机型',
   'Nenhuma compatibilidade confirmada.': '暂无已确认的适用机型。',
@@ -234,6 +236,8 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Nome da loja': '店名',
   'Endereço': '地址',
   'Telefone': '电话',
+  'WhatsApp da loja': '店铺 WhatsApp',
+  'Celular com DDD: a notinha traz o número e um QR code que abre a conversa no WhatsApp.': '填写带区号的手机号：小票会印上号码和可打开 WhatsApp 对话的二维码。',
   'Mensagem de rodapé': '页脚留言',
   'A notinha sempre termina com “NÃO É DOCUMENTO FISCAL”.': '小票末尾固定印有“NÃO É DOCUMENTO FISCAL”（非税务发票）。',
   'Ex.: Garantia de 90 dias. Obrigado pela preferência!': '例：Garantia de 90 dias. Obrigado pela preferência!',
@@ -396,6 +400,29 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Baterias': '电池',
   'Películas': '贴膜',
   'Capas': '手机壳',
+  // Consultar código e preço no fim da venda
+  'Preço da venda': '销售价格',
+  'Consultar código': '查询单号',
+  'Número do registro': '记录编号',
+  'Consultar': '查询',
+  'C0A1B2C3 ou M1542': 'C0A1B2C3 或 M1542',
+  'Venda nº da notinha (vale também para o cancelamento e para venda recusada) ou movimentação de estoque, como M1542.': '小票上的销售单号（也可查询取消和被拒的销售），或库存流水编号，例如 M1542。',
+  'Venda nº impresso na notinha. Você encontra só as suas vendas.': '小票上印的销售单号。只能查到你自己的销售。',
+  'Procurando…': '查询中…',
+  'Nenhum registro com o código': '没有找到该编号的记录',
+  'Neste aparelho, aguardando envio': '在本设备上，等待发送',
+  'Ver notinha': '查看小票',
+  'Estoque devolvido': '库存已退回',
+  'Estoque não devolvido': '库存未退回',
+  'Movimentações de estoque': '库存流水',
+  'Recusada': '被拒绝',
+  'Ocorrência aberta': '问题待处理',
+  'Abrir Ocorrências': '打开问题列表',
+  'feita sem internet': '离线开单',
+  '· feita sem internet': '· 离线开单',
+  'Venda, cancelamento, entrada ou ajuste pelo número': '按编号查询销售、取消、入库或调整',
+  'Código inválido. Use o número da venda (8 letras e números, como C0A1B2C3) ou da movimentação (como M1542).': '编号无效。请输入销售单号（8 位字母和数字，例如 C0A1B2C3）或库存流水编号（例如 M1542）。',
+  'Código inválido. Use o número da venda impresso na notinha (8 letras e números, como C0A1B2C3).': '编号无效。请输入小票上印的销售单号（8 位字母和数字，例如 C0A1B2C3）。',
 };
 
 /** Textos com partes variáveis: cada {} é um número, nome ou preço. */
@@ -468,6 +495,7 @@ export const MODELOS_ZH: Record<string, string> = {
 
   // Catálogo
   '{} produtos': '{} 个商品',
+  'Buscar em {}': '在 {} 中搜索',
   'Preços e estoque de {}': '{} 的价格和库存',
 
   // Minhas vendas
@@ -483,4 +511,13 @@ export const MODELOS_ZH: Record<string, string> = {
   '{} está sem estoque.': '{} 已无库存。',
   'Código de barras {} não cadastrado. Só é possível vender produtos do catálogo.': '条形码 {} 未录入。只能销售已录入的商品。',
   'Sem internet: venda guardada no aparelho ({}). Envio automático quando conectar.': '无网络：销售单已保存在本机（{}），联网后自动发送。',
+  // Consultar código e preço no fim da venda
+  '{} · {} disp.': '{} · 可售 {}',
+  'nº {}': '单号 {}',
+  'Motivo: {}': '原因：{}',
+  '{} · por {}': '{} · 操作人 {}',
+  'Movimentação {}': '库存流水 {}',
+  'Ver venda nº {}': '查看销售单 {}',
+  'Venda feita em {}, recusada em {}, resolvida em {}': '开单时间 {}，被拒时间 {}，解决时间 {}',
+  '{} · {} · custo {} un.': '{} · {} · 成本 {}/件',
 };

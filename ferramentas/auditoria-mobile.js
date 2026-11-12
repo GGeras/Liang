@@ -90,8 +90,8 @@ function resp(u, accept) {
   return [];
 }
 const telas = PAPEL === 'admin'
-  ? ['/vender', '/catalogo', '/admin/painel', '/admin/estoque', '/admin/mais', '/admin/produtos', '/admin/produtos/01-02', '/admin/produtos/novo', '/admin/vendas', '/admin/movimentos', '/admin/ocorrencias', '/admin/usuarios', '/admin/loja']
-  : ['/vender', '/catalogo', '/minhas-vendas'];
+  ? ['/vender', '/catalogo', '/catalogo?tipo=1', '/admin/painel', '/admin/estoque', '/admin/mais', '/admin/produtos', '/admin/produtos/01-02', '/admin/produtos/novo', '/admin/vendas', '/admin/movimentos', '/admin/ocorrencias', '/admin/usuarios', '/admin/loja', '/consultar', '/consultar?codigo=C0A1B2C3', '/consultar?codigo=M1']
+  : ['/vender', '/catalogo', '/catalogo?tipo=1', '/minhas-vendas', '/consultar?codigo=C0A1B2C3'];
 (async () => {
   const b = await chromium.launch();
   // No modo acessibilidade o AccessLint é injetado como script: a CSP o bloquearia
@@ -149,7 +149,7 @@ const telas = PAPEL === 'admin'
   await checar('instalar'); await p.screenshot({ path: `${OUT}/00-instalar.png` });
   for (const t of telas) {
     await p.goto('http://localhost:4301' + t); await p.waitForTimeout(700);
-    const nome = t.replace(/\//g, '_').replace(/^_/, '');
+    const nome = t.replace(/[/?=]/g, '_').replace(/^_/, '');
     await checar(nome);
     await p.screenshot({ path: `${OUT}/${nome}.png`, fullPage: true });
   }
@@ -162,7 +162,7 @@ const telas = PAPEL === 'admin'
   await p.fill('#codigo', '0201'); await p.waitForTimeout(450);
   await p.fill('#codigo', '9999'); await p.waitForTimeout(450);
   await checar('vender-carrinho'); await p.screenshot({ path: `${OUT}/vender-carrinho.png`, fullPage: true });
-  await p.click('text=' + T('Atacado')); await p.click('text=' + T('Finalizar venda'));
+  await p.click('text=' + T('Finalizar venda')); await p.click('dialog[open] .preco-venda button:has-text("' + T('Atacado') + '")');
   await p.fill('dialog[open] input', 'Assistência Técnica Cell Center Uberlândia Ltda');
   await checar('folha-finalizar'); await p.screenshot({ path: `${OUT}/folha-finalizar.png` });
   await p.click('dialog[open] button:has-text("Pix")'); await p.click('text=' + T('Revisar venda')); await p.waitForTimeout(200);
@@ -193,7 +193,7 @@ const telas = PAPEL === 'admin'
     await p.goto('http://localhost:4301/admin/estoque'); await p.waitForTimeout(600);
     await p.click('.linha >> nth=1'); await p.waitForTimeout(200);
     await checar('folha-estoque'); await p.screenshot({ path: `${OUT}/folha-estoque.png` });
-    await p.goto('http://localhost:4301/catalogo'); await p.waitForTimeout(600);
+    await p.goto('http://localhost:4301/catalogo?tipo=1'); await p.waitForTimeout(600);
     await p.click('.produto >> nth=1'); await p.waitForTimeout(200);
     await checar('folha-catalogo'); await p.screenshot({ path: `${OUT}/folha-catalogo.png` });
   }

@@ -1,6 +1,6 @@
-import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CatalogoService } from '../../core/catalogo.service';
 import { AuthService } from '../../core/auth.service';
 import { ItemCatalogo } from '../../core/models';
@@ -12,6 +12,7 @@ interface Grupo {
   nome: string;
   marca: string | null;
   modelo: string | null;
+  tipo_id: number;
   tipo: string;
   foto_url: string | null;
   descricao: string | null;
@@ -19,36 +20,68 @@ interface Grupo {
   variacoes: ItemCatalogo[];
 }
 
+interface TipoCatalogo {
+  id: number;
+  nome: string;
+  produtos: number;
+}
+
 @Component({
   selector: 'app-catalogo',
   imports: [FormsModule, RouterLink, BrlPipe, DataHoraPipe, Ident, Icone],
   template: `
     <main class="pagina">
-      <header class="cabecalho">
-        <h1>Catálogo</h1>
-        <span class="muted small">{{ grupos().length }} produtos</span>
-      </header>
+      @if (tipoId() === null) {
+        <header class="cabecalho">
+          <h1>Catálogo</h1>
+          <span class="muted small">{{ contagem(totalProdutos()) }}</span>
+        </header>
+      } @else {
+        <header class="cabecalho">
+          <button type="button" class="btn-icone" (click)="voltar()" aria-label="Voltar para os tipos"><i-con nome="voltar" /></button>
+          <h1 class="titulo-tipo"><span class="etiqueta num">{{ pad(tipoId()!) }}</span><span class="clamp-2">{{ tipoAtual()?.nome ?? 'Tipo' }}</span></h1>
+          <span class="muted small">{{ contagem(tipoAtual()?.produtos ?? 0) }}</span>
+        </header>
+      }
 
-      <input class="input busca" type="search" placeholder="Buscar por código, nome, marca ou modelo"
+      <input class="input busca" type="search" [placeholder]="tipoAtual() ? 'Buscar em ' + tipoAtual()!.nome : 'Buscar por código, nome, marca ou modelo'"
         [ngModel]="termo()" (ngModelChange)="termo.set($event)" aria-label="Buscar no catálogo" />
-
-      <div class="rolagem-x" role="group" aria-label="Filtrar por tipo">
-        <button class="chip" [attr.aria-pressed]="tipo() === null" (click)="tipo.set(null)">Todos</button>
-        @for (t of tipos(); track t.id) {
-          <button class="chip" [attr.aria-pressed]="tipo() === t.id" (click)="tipo.set(t.id)">{{ t.nome }}</button>
-        }
-      </div>
 
       @if (catalogo.atualizadoEm()) {
         <p class="muted small">Preços e estoque de {{ catalogo.atualizadoEm() | dataHora }}</p>
       }
 
-      @if (grupos().length === 0) {
-        <p class="vazio">{{ catalogo.itens().length ? 'Nada encontrado com essa busca.' : 'O catálogo ainda está vazio.' }}</p>
-      }
-
-      <ul class="lista">
-        @for (g of grupos(); track g.produto_id) {
+      @if (tipoId() === null && !termo().trim()) {
+        <!-- Primeiro o tipo; os produtos aparecem depois de escolher -->
+        @if (tipos().length) {
+          <ul class="lista" aria-label="Tipos de produto">
+            @for (t of tipos(); track t.id) {
+              <li>
+                <button type="button" class="tipo-linha" (click)="abrirTipo(t.id)">
+                  <span class="etiqueta num">{{ pad(t.id) }}</span>
+                  <span class="tipo-nome">
+                    <strong class="clamp-2">{{ t.nome }}</strong>
+                    <span class="muted small">{{ contagem(t.produtos) }}</span>
+                  </span>
+                  <i-con nome="voltar" class="seta" />
+                </button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="vazio">O catálogo ainda está vazio.</p>
+        }
+      } @else {
+        @if (secoes().length === 0) {
+          <p class="vazio">{{ catalogo.itens().length ? 'Nada encontrado com essa busca.' : 'O catálogo ainda está vazio.' }}</p>
+        }
+        @for (s of secoes(); track s.id) {
+          <section class="secao">
+            @if (tipoId() === null) {
+              <h2 class="secao-titulo"><span class="etiqueta num">{{ pad(s.id) }}</span><span class="uma-linha">{{ s.nome }}</span><span class="muted small num conta">{{ contagem(s.grupos.length) }}</span></h2>
+            }
+            <ul class="lista">
+        @for (g of s.grupos; track g.produto_id) {
           <li>
             <button class="produto" (click)="abrir(g)">
               <div class="linha1">
@@ -72,7 +105,10 @@ interface Grupo {
             </button>
           </li>
         }
-      </ul>
+            </ul>
+          </section>
+        }
+      }
     </main>
 
     <dialog #dlg class="folha" aria-label="Detalhes do produto">
@@ -107,6 +143,18 @@ interface Grupo {
   `,
   styles: `
     .busca { position: sticky; top: .5rem; z-index: 5; }
+    .titulo-tipo { flex: 1; min-width: 0; display: flex; align-items: center; gap: .5rem; font-size: 1.3rem; }
+    .titulo-tipo .etiqueta { flex: none; font-size: 1rem; }
+    .tipo-linha {
+      width: 100%; min-height: 64px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .75rem; align-items: center;
+      padding: .8rem 1rem; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
+    }
+    .tipo-linha .etiqueta { font-size: 1rem; }
+    .tipo-nome { display: grid; gap: .1rem; min-width: 0; font-size: 1.05rem; }
+    .seta { transform: rotate(180deg); color: var(--muted); }
+    .secao { display: grid; gap: .5rem; }
+    .secao-titulo { display: flex; align-items: center; gap: .5rem; margin: 0; min-width: 0; font-size: 1.05rem; }
+    .secao-titulo .conta { margin-left: auto; flex: none; font-weight: 600; }
     .produto { width: 100%; display: grid; gap: .6rem; padding: .9rem 1rem; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
     .linha1 { display: flex; gap: .6rem; align-items: start; }
     .linha1 strong { flex: 1; min-width: 0; }
@@ -137,19 +185,36 @@ interface Grupo {
 export class Catalogo {
   protected catalogo = inject(CatalogoService);
   protected auth = inject(AuthService);
+  private router = inject(Router);
+  /** Tipo escolhido, na URL (?tipo=1): o voltar do celular retorna para a lista de tipos. */
+  readonly tipoParam = input<string | undefined>(undefined, { alias: 'tipo' });
   protected termo = signal('');
-  protected tipo = signal<number | null>(null);
   protected sel = signal<Grupo | null>(null);
   private dlg = viewChild.required<ElementRef<HTMLDialogElement>>('dlg');
+  /** Entrou no tipo tocando na lista: o Voltar só desfaz essa navegação. */
+  private veioDaLista = false;
 
-  protected tipos = computed(() => {
-    const m = new Map<number, string>();
-    for (const i of this.catalogo.itens()) m.set(i.tipo_id, i.tipo);
-    return [...m].map(([id, nome]) => ({ id, nome })).sort((a, b) => a.id - b.id);
+  protected tipoId = computed(() => {
+    const n = Number(this.tipoParam());
+    return this.tipoParam() && Number.isInteger(n) ? n : null;
   });
 
-  protected grupos = computed<Grupo[]>(() => {
-    const t = this.tipo();
+  protected tipos = computed<TipoCatalogo[]>(() => {
+    const m = new Map<number, { nome: string; produtos: Set<string> }>();
+    for (const i of this.catalogo.itens()) {
+      const t = m.get(i.tipo_id) ?? { nome: i.tipo, produtos: new Set<string>() };
+      t.produtos.add(i.produto_id);
+      m.set(i.tipo_id, t);
+    }
+    return [...m].map(([id, t]) => ({ id, nome: t.nome, produtos: t.produtos.size })).sort((a, b) => a.id - b.id);
+  });
+
+  protected tipoAtual = computed(() => this.tipos().find((t) => t.id === this.tipoId()));
+  protected totalProdutos = computed(() => this.tipos().reduce((s, t) => s + t.produtos, 0));
+
+  /** Produtos (com as variações) do tipo escolhido, ou de todos os tipos ao buscar, separados por tipo. */
+  protected secoes = computed(() => {
+    const t = this.tipoId();
     const m = new Map<string, Grupo>();
     for (const i of this.catalogo.pesquisar(this.termo())) {
       if (t !== null && i.tipo_id !== t) continue;
@@ -157,8 +222,45 @@ export class Catalogo {
       g.variacoes.push(i);
       m.set(i.produto_id, g);
     }
-    return [...m.values()];
+    const grupos = [...m.values()];
+    return this.tipos()
+      .map((tipo) => ({ ...tipo, grupos: grupos.filter((g) => g.tipo_id === tipo.id) }))
+      .filter((s) => s.grupos.length);
   });
+
+  constructor() {
+    // Trocou de tipo (ou voltou para a lista): busca limpa e começa do topo
+    let anterior: number | null | undefined;
+    effect(() => {
+      const id = this.tipoId();
+      untracked(() => {
+        if (anterior !== undefined && anterior !== id) {
+          this.termo.set('');
+          scrollTo({ top: 0 });
+        }
+        anterior = id;
+      });
+    });
+  }
+
+  protected pad(n: number) {
+    return String(n).padStart(2, '0');
+  }
+
+  protected contagem(n: number) {
+    return n === 1 ? '1 produto' : `${n} produtos`;
+  }
+
+  protected abrirTipo(id: number) {
+    this.veioDaLista = true;
+    this.router.navigate([], { queryParams: { tipo: id } });
+  }
+
+  protected voltar() {
+    if (this.veioDaLista) history.back();
+    else this.router.navigate([], { queryParams: {}, replaceUrl: true });
+    this.veioDaLista = false;
+  }
 
   protected subtitulo(g: Grupo) {
     return [g.marca, g.modelo].filter(Boolean).join(' · ');

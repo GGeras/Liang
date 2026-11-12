@@ -38,8 +38,9 @@ import { Toast } from '../../shared/ui';
             <textarea name="endereco" [ngModel]="endereco()" (ngModelChange)="endereco.set($event)" maxlength="200" rows="2" autocomplete="street-address"></textarea>
           </label>
           <label class="campo">
-            <span>Telefone</span>
-            <input name="telefone" [ngModel]="telefone()" (ngModelChange)="telefone.set($event)" maxlength="30" inputmode="tel" autocomplete="tel" />
+            <span>WhatsApp da loja</span>
+            <input name="telefone" [ngModel]="telefone()" (ngModelChange)="telefone.set($event)" maxlength="30" inputmode="tel" autocomplete="tel" aria-describedby="dica-telefone" />
+            <small id="dica-telefone" class="dica-campo">Celular com DDD: a notinha traz o número e um QR code que abre a conversa no WhatsApp.</small>
           </label>
           <label class="campo">
             <span>Mensagem de rodapé</span>
@@ -63,6 +64,7 @@ import { Toast } from '../../shared/ui';
     .pagina.larga { max-width: 1100px; }
     .duas { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
     .form { display: grid; gap: 1rem; }
+    .dica-campo { font-size: .85rem; color: var(--muted); }
     .previa { display: grid; gap: .4rem; }
     .previa app-simulacao-notinha { margin-top: .35rem; }
     @media (min-width: 900px) {

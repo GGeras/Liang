@@ -61,8 +61,38 @@ app-notinha {
 .nt-loja {
   text-align: center;
   font-size: 11px;
+}
+.nt-loja-texto {
   display: grid;
   gap: 0.3mm;
+}
+.nt-fone b {
+  font-size: 12px;
+  font-weight: 800;
+}
+/* Com WhatsApp: nome, endereço e número à esquerda (o mesmo eixo dos dados da
+   venda); o QR à direita, centrado na altura do texto e colado ao número. */
+.nt-loja-qr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18mm;
+  gap: 3mm;
+  align-items: center;
+  text-align: left;
+  p {
+    text-wrap: pretty !important;
+  }
+  .nt-fone {
+    margin-top: 0.6mm !important;
+  }
+  .nt-end-linha {
+    display: block;
+  }
+}
+.nt-qr {
+  display: block;
+  width: 18mm;
+  height: 18mm;
+  fill: #000;
 }
 /* Partes do endereço: só quebra entre elas (uma parte maior que a linha ainda quebra por dentro) */
 .nt-junto {

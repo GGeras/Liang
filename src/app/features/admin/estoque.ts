@@ -1,4 +1,5 @@
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { NOME_MOV, codigoMov } from '../../core/codigo';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CatalogoService } from '../../core/catalogo.service';
@@ -9,6 +10,7 @@ import { Scanner } from '../../shared/scanner';
 import { Ajuda } from '../../shared/ajuda';
 
 interface Mov {
+  id: number;
   tipo: string;
   quantidade: number;
   saldo_apos: number;
@@ -17,12 +19,7 @@ interface Mov {
   perfis: { nome: string } | null;
 }
 
-export const NOME_MOV: Record<string, string> = {
-  entrada: 'Entrada',
-  venda: 'Venda',
-  ajuste: 'Ajuste',
-  cancelamento: 'Cancelamento',
-};
+export { NOME_MOV } from '../../core/codigo';
 
 @Component({
   selector: 'app-estoque',
@@ -117,7 +114,7 @@ export const NOME_MOV: Record<string, string> = {
               @for (m of movs(); track $index) {
                 <li>
                   <span class="num" [class.pos]="m.quantidade > 0" [class.neg]="m.quantidade < 0">{{ m.quantidade > 0 ? '+' : '' }}{{ m.quantidade }}</span>
-                  <span>{{ nomeMov[m.tipo] }} · {{ m.perfis?.nome }}<br /><span class="muted small">{{ m.criado_em | dataHora }}{{ m.motivo ? ' · ' + m.motivo : '' }}</span></span>
+                  <span>{{ nomeMov[m.tipo] }} · {{ m.perfis?.nome }}<br /><span class="muted small"><span class="num">{{ codMov(m.id) }}</span> · {{ m.criado_em | dataHora }}{{ m.motivo ? ' · ' + m.motivo : '' }}</span></span>
                   <span class="muted num small">saldo {{ m.saldo_apos }}</span>
                 </li>
               } @empty {
@@ -162,6 +159,7 @@ export class Estoque {
   protected catalogo = inject(CatalogoService);
   private toast = inject(Toast);
   protected nomeMov = NOME_MOV;
+  protected codMov = codigoMov;
   protected termo = signal('');
   protected soBaixo = signal(false);
   /** Código lido que não está no catálogo: oferece o cadastro já preenchido. */
@@ -236,7 +234,7 @@ export class Estoque {
   protected async carregarMovs() {
     const { data } = await supabase
       .from('movimentos')
-      .select('tipo, quantidade, saldo_apos, criado_em, motivo, perfis(nome)')
+      .select('id, tipo, quantidade, saldo_apos, criado_em, motivo, perfis(nome)')
       .eq('variacao_id', this.sel()!.variacao_id)
       .order('criado_em', { ascending: false })
       .limit(50);

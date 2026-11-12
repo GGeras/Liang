@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { codigoVenda } from '../../core/codigo';
+import { Router, RouterLink } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { AuthService } from '../../core/auth.service';
 import { VendasService } from '../../core/vendas.service';
@@ -11,7 +12,7 @@ import { Ajuda } from '../../shared/ajuda';
 
 @Component({
   selector: 'app-minhas-vendas',
-  imports: [BrlPipe, DataHoraPipe, Icone, SeletorIdioma, Ajuda],
+  imports: [RouterLink, BrlPipe, DataHoraPipe, Icone, SeletorIdioma, Ajuda],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -19,7 +20,10 @@ import { Ajuda } from '../../shared/ajuda';
           <h1>Minhas vendas</h1>
           <p class="muted small">{{ auth.perfil()?.nome }}</p>
         </div>
-        <button class="btn sec pequeno" (click)="sair()"><i-con nome="sair" /> Sair</button>
+        <div class="acoes-topo">
+          <a class="btn-icone" routerLink="/consultar" aria-label="Consultar código"><i-con nome="lupa" /></a>
+          <button class="btn sec pequeno" (click)="sair()"><i-con nome="sair" /> Sair</button>
+        </div>
       </header>
 
       @if (vendas.minhaFila().length) {
@@ -28,7 +32,7 @@ import { Ajuda } from '../../shared/ajuda';
           <ul class="lista fila">
             @for (v of vendas.minhaFila(); track v.id) {
               <li>
-                <span>{{ v.cliente }}</span><span class="muted small">{{ v.criada_em | dataHora }}</span><strong class="num">{{ v.total_previsto | brl }}</strong>
+                <span>{{ v.cliente }}</span><span class="muted small"><span class="num">nº {{ cod(v.id) }}</span> · {{ v.criada_em | dataHora }}</span><strong class="num">{{ v.total_previsto | brl }}</strong>
                 @if (v.ultimo_erro) {
                   <span class="erro-envio small">Ainda não enviada: {{ v.ultimo_erro }}. Tentando de novo; se persistir, entre novamente.</span>
                 }
@@ -50,7 +54,7 @@ import { Ajuda } from '../../shared/ajuda';
               <strong class="clamp-2">{{ v.cliente_nome }}</strong>
               <strong class="num">{{ v.total | brl }}</strong>
             </div>
-            <span class="muted small">{{ v.criada_em | dataHora }} · {{ v.tipo_preco === 'atacado' ? 'Atacado' : 'Varejo' }} · {{ pag[v.forma_pagamento] }}</span>
+            <span class="muted small"><span class="num">nº {{ cod(v.id) }}</span> · {{ v.criada_em | dataHora }} · {{ v.tipo_preco === 'atacado' ? 'Atacado' : 'Varejo' }} · {{ pag[v.forma_pagamento] }}</span>
             <ul class="itens">
               @for (i of v.venda_itens; track $index) {
                 <li><span class="num">{{ i.quantidade }}×</span> <span class="clamp-2">{{ i.variacoes.produtos.codigo || i.variacoes.codigo_barras }} {{ i.variacoes.produtos.nome }} · {{ i.variacoes.nome }}</span></li>
@@ -74,6 +78,7 @@ import { Ajuda } from '../../shared/ajuda';
     </main>
   `,
   styles: `
+    .acoes-topo { display: flex; gap: .4rem; align-items: center; }
     h2 { margin-bottom: .5rem; }
     .bloco-idioma { display: block; padding: .75rem 1rem; margin-top: 1.25rem; }
     .fila li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .1rem .75rem; padding: .75rem 1rem; align-items: center; }
@@ -95,6 +100,7 @@ export class MinhasVendas {
   protected vendas = inject(VendasService);
   protected notinha = inject(NotinhaService);
   protected deLinha = notinhaDeLinha;
+  protected cod = codigoVenda;
   private toast = inject(Toast);
   private router = inject(Router);
   protected pag = PAGAMENTOS;
