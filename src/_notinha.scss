@@ -1,0 +1,181 @@
+/* =====================================================================
+   Notinha — impressora térmica de 80 mm (Epson TM-T20)
+   Este CSS vale para a simulação na tela E para o papel: o que aparece
+   na tela é o que sai na impressora. Só preto puro, sem fundo, cinza
+   nem sombra (a térmica não imprime tons). O "papel" da simulação
+   (fundo, serrilha, linha de corte) fica fora daqui, em notinha-previa.ts.
+   ===================================================================== */
+app-notinha {
+  display: block;
+}
+
+.notinha {
+  box-sizing: border-box;
+  display: block;
+  width: 72mm; /* área impressa da TM-T20 em papel de 80 mm */
+  margin: 0 auto;
+  padding: 3mm 0 4mm;
+  background: transparent;
+  color: #000;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  font-stretch: 100%;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-align: left;
+  overflow-wrap: anywhere; /* nome longo quebra, nunca é cortado */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+
+  p,
+  dl,
+  dd,
+  ul {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.nt-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.nt-loja {
+  text-align: center;
+  font-size: 11px;
+}
+.nt-nome {
+  font-size: 12px;
+  font-weight: 800;
+  font-stretch: 115%;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.5mm !important;
+}
+
+.nt-marca {
+  margin-top: 2mm !important;
+  padding: 1mm;
+  border: 2px solid #000;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+}
+.nt-marca.nt-pendente {
+  border-style: dashed;
+  letter-spacing: 0.02em;
+}
+
+.nt-sep {
+  height: 0;
+  margin: 2mm 0;
+  border: 0;
+  border-top: 1px dashed #000;
+}
+
+.nt-dados {
+  display: grid;
+  gap: 0.4mm;
+  div {
+    display: grid;
+    grid-template-columns: 17mm minmax(0, 1fr);
+    gap: 1mm;
+  }
+  dd {
+    font-weight: 700;
+  }
+}
+
+.nt-itens {
+  list-style: none;
+  display: grid;
+  gap: 1.6mm;
+}
+.nt-produto {
+  font-weight: 600;
+}
+.nt-cod {
+  font-weight: 800;
+}
+.nt-var {
+  font-size: 11px;
+}
+.nt-conta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 2mm;
+  padding-left: 3mm;
+  span:last-child {
+    margin-left: auto;
+    font-weight: 700;
+  }
+}
+
+.nt-total,
+.nt-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2mm;
+}
+.nt-total {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.nt-rodape {
+  text-align: center;
+  font-size: 11px;
+  display: grid;
+  gap: 1mm;
+}
+.nt-fiscal {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Impressão ----------
+   A notinha a imprimir é montada em #impressao, filho direto do <body>.
+   Na tela ela fica fora da área visível (para poder ser medida); no papel
+   só ela aparece. A altura da página é a da notinha, medida na hora de
+   imprimir (NotinhaService.imprimir injeta "@page { size: 80mm <altura>mm }").
+   "size: 80mm auto" não serve: o Chrome descarta a regra inteira e usa papel
+   Carta. A regra abaixo é só o padrão (bobina de 80 × 297 mm do driver Epson). */
+#impressao {
+  position: fixed;
+  top: 0;
+  left: -200mm;
+  width: 80mm;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@page {
+  size: 80mm 297mm;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  body > :not(#impressao) {
+    display: none !important;
+  }
+  #impressao {
+    position: static;
+    visibility: visible;
+  }
+  .nt-itens li {
+    break-inside: avoid;
+  }
+}

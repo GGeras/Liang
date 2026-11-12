@@ -44,6 +44,7 @@ export class Mais {
     { rota: '/admin/movimentos', nome: 'Movimentações', desc: 'Histórico de entradas, saídas e ajustes', icone: 'historico' },
     { rota: '/admin/ocorrencias', nome: 'Ocorrências', desc: 'Vendas recusadas por falta de estoque', icone: 'alerta' },
     { rota: '/admin/usuarios', nome: 'Usuários', desc: 'Vendedores e administradores', icone: 'usuarios' },
+    { rota: '/admin/loja', nome: 'Dados da loja', desc: 'Nome, endereço e mensagem da notinha', icone: 'loja' },
   ];
 
   async sair() {

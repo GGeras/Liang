@@ -3,26 +3,10 @@ import { Router } from '@angular/router';
 import { supabase, mensagemErro } from '../../core/supabase';
 import { AuthService } from '../../core/auth.service';
 import { VendasService } from '../../core/vendas.service';
-import { PAGAMENTOS } from '../../core/models';
+import { PAGAMENTOS, SELECT_VENDA, VendaLinha } from '../../core/models';
 import { BrlPipe, DataHoraPipe, Icone, Toast } from '../../shared/ui';
+import { NotinhaService, notinhaDeLinha } from '../../core/notinha.service';
 import { SeletorIdioma } from '../../shared/idioma';
-
-export interface VendaLinha {
-  id: string;
-  cliente_nome: string;
-  tipo_preco: 'atacado' | 'varejo';
-  forma_pagamento: keyof typeof PAGAMENTOS;
-  total: number;
-  status: 'concluida' | 'cancelada';
-  criada_em: string;
-  offline: boolean;
-  motivo_cancelamento: string | null;
-  vendedor?: { nome: string } | null;
-  venda_itens: { quantidade: number; preco_unitario: number; variacoes: { nome: string; codigo_barras: string | null; produtos: { codigo: string | null; nome: string } } }[];
-}
-
-export const SELECT_VENDA =
-  'id, cliente_nome, tipo_preco, forma_pagamento, total, status, criada_em, offline, motivo_cancelamento, estoque_devolvido, vendedor:perfis!vendas_vendedor_id_fkey(nome), venda_itens(quantidade, preco_unitario, variacoes(nome, codigo_barras, produtos(codigo, nome)))';
 
 @Component({
   selector: 'app-minhas-vendas',
@@ -47,6 +31,7 @@ export const SELECT_VENDA =
                 @if (v.ultimo_erro) {
                   <span class="erro-envio small">Ainda não enviada: {{ v.ultimo_erro }}. Tentando de novo; se persistir, entre novamente.</span>
                 }
+                <button type="button" class="btn sec pequeno reimprimir" (click)="notinha.abrir(notinha.dePendente(v, true))"><i-con nome="imprimir" /> Imprimir notinha</button>
               </li>
             }
           </ul>
@@ -73,6 +58,7 @@ export const SELECT_VENDA =
             @if (v.status === 'cancelada') {
               <p class="nota-cancelada">Cancelada: {{ v.motivo_cancelamento }}</p>
             }
+            <button type="button" class="btn sec pequeno reimprimir" (click)="notinha.abrir(deLinha(v))"><i-con nome="imprimir" /> Reimprimir</button>
           </li>
         } @empty {
           @if (!carregando()) {
@@ -94,6 +80,8 @@ export const SELECT_VENDA =
     .fila li > .small { grid-row: 2; }
     .fila li > strong { grid-row: 1 / span 2; grid-column: 2; }
     .fila .erro-envio { grid-column: 1 / -1; color: var(--danger); font-weight: 600; }
+    .fila .reimprimir { grid-column: 1 / -1; }
+    .reimprimir { justify-self: start; margin-top: .25rem; }
     .venda { display: grid; gap: .3rem; padding: .85rem 1rem; }
     .venda.cancelada .topo .num { text-decoration: line-through; color: var(--muted); }
     .topo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: start; }
@@ -104,6 +92,8 @@ export const SELECT_VENDA =
 export class MinhasVendas {
   protected auth = inject(AuthService);
   protected vendas = inject(VendasService);
+  protected notinha = inject(NotinhaService);
+  protected deLinha = notinhaDeLinha;
   private toast = inject(Toast);
   private router = inject(Router);
   protected pag = PAGAMENTOS;

@@ -5,6 +5,8 @@ import { CatalogoService, ConexaoService } from '../core/catalogo.service';
 import { VendasService } from '../core/vendas.service';
 import { AtualizacaoService } from '../core/atualizacao.service';
 import { Icone } from '../shared/ui';
+import { LojaService } from '../core/loja.service';
+import { PreviaNotinha } from '../shared/notinha-previa';
 
 interface Aba {
   rota: string;
@@ -14,7 +16,7 @@ interface Aba {
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icone],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icone, PreviaNotinha],
   template: `
     @if (!conexao.online() || vendas.minhaFila().length) {
       <div class="faixa" [class.off]="!conexao.online()" role="status">
@@ -49,6 +51,8 @@ interface Aba {
         </a>
       }
     </nav>
+
+    <app-previa-notinha />
   `,
   styles: `
     .faixa {
@@ -101,5 +105,6 @@ export class Shell {
   constructor() {
     this.catalogo.iniciar();
     this.vendas.iniciar();
+    inject(LojaService).iniciar();
   }
 }

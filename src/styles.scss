@@ -3,6 +3,9 @@
    Inspirado nas etiquetas de gaveta de peças: papel acinzentado,
    tinta azul-marinho, etiqueta amarela com o código 00-00.
    ===================================================================== */
+// Notinha da impressora térmica (tela e papel usam o mesmo CSS)
+@use 'notinha';
+
 :root {
   --paper: #eef1f4;
   --surface: #ffffff;
