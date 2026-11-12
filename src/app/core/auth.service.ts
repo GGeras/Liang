@@ -1,7 +1,18 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { supabase } from './supabase';
+import { isAuthRetryableFetchError } from '@supabase/supabase-js';
+import { erroDeRede, supabase } from './supabase';
 import { Perfil } from './models';
 import { ler, salvar, apagar } from './cofre';
+
+/** Usuário da sessão guardada no aparelho (sem validar no servidor). */
+function usuarioGuardado(): string | undefined {
+  try {
+    const s = JSON.parse(localStorage.getItem('liang-auth') ?? 'null') as { user?: { id?: string } } | null;
+    return s?.user?.id;
+  } catch {
+    return undefined;
+  }
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -24,17 +35,24 @@ export class AuthService {
   }
 
   private async carregar() {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) return;
+    // Sem internet e com o token vencido (app parado por mais de 1 h), a renovação
+    // fica tentando por ~30 s e depois devolve a sessão vazia, embora ela continue
+    // guardada no aparelho. O app não espera por isso: segue logado com o perfil do
+    // cache e vende offline. Ao reconectar, a sessão é renovada sozinha.
+    const limite = new Promise<null>((ok) => setTimeout(() => ok(null), navigator.onLine ? 5000 : 0));
+    const r = await Promise.race([supabase.auth.getSession(), limite]);
+    const semRede = !r || (!!r.error && (isAuthRetryableFetchError(r.error) || erroDeRede(r.error)));
+    const uid = r?.data.session?.user.id ?? (semRede ? usuarioGuardado() : undefined);
+    if (!uid) return;
     // Sem internet: usa o perfil guardado no aparelho
     const cache = await ler<Perfil | null>('perfil', null);
-    if (cache?.id === data.session.user.id) this.perfil.set(cache);
-    try {
-      await this.atualizarPerfil(data.session.user.id);
-    } catch (e) {
-      // Não deixa a inicialização falhar: os guards mandam para /entrar com o aviso
-      this.aviso.set((e as Error).message);
-    }
+    if (cache?.id === uid) this.perfil.set(cache);
+    // Não deixa a inicialização falhar: os guards mandam para /entrar com o aviso
+    const atualizar = this.atualizarPerfil(uid).catch((e) => this.aviso.set((e as Error).message));
+    // Com internet, espera o perfil do servidor (papel e acesso atualizados). Sem
+    // rede, abre já com o do aparelho; a conferência termina quando a rede voltar
+    // (acesso desativado: sai e volta para Entrar)
+    if (!this.perfil() || !semRede) await atualizar;
   }
 
   private async atualizarPerfil(id: string) {

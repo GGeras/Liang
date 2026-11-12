@@ -5,10 +5,11 @@ import { CatalogoService } from '../../core/catalogo.service';
 import { PAGAMENTOS, SELECT_VENDA, VendaLinha } from '../../core/models';
 import { BrlPipe, DataHoraPipe, Icone, Toast } from '../../shared/ui';
 import { NotinhaService, notinhaDeLinha } from '../../core/notinha.service';
+import { Ajuda } from '../../shared/ajuda';
 
 @Component({
   selector: 'app-vendas-admin',
-  imports: [FormsModule, BrlPipe, DataHoraPipe, Icone],
+  imports: [FormsModule, BrlPipe, DataHoraPipe, Icone, Ajuda],
   template: `
     <main class="pagina">
       <header class="cabecalho"><h1>Vendas</h1></header>
@@ -78,8 +79,8 @@ import { NotinhaService, notinhaDeLinha } from '../../core/notinha.service';
         <div class="form">
           <label class="campo"><span>Motivo</span><input [ngModel]="motivo()" (ngModelChange)="motivo.set($event)" placeholder="Ex.: cliente desistiu" /></label>
           <div class="campo">
-            <span>Os produtos voltam para o estoque?</span>
-            <div class="segmento">
+            <span class="rotulo-ajuda"><span id="devolver-rotulo">Os produtos voltam para o estoque?</span><app-ajuda sobre="Devolver ao estoque" texto="Sim se as peças voltaram inteiras para a loja; Não se ficaram com o cliente ou estão com defeito." /></span>
+            <div class="segmento" role="group" aria-labelledby="devolver-rotulo">
               <button [attr.aria-pressed]="devolver() === true" (click)="devolver.set(true)">Sim, devolver</button>
               <button [attr.aria-pressed]="devolver() === false" (click)="devolver.set(false)">Não</button>
             </div>
@@ -119,6 +120,8 @@ export class VendasAdmin {
   protected devolver = signal<boolean | null>(null);
   protected salvando = signal(false);
   private pagina = 0;
+  /** Filtro trocado com a lista ainda carregando: a resposta do filtro antigo é ignorada. */
+  private consulta = 0;
   private dlg = viewChild.required<ElementRef<HTMLDialogElement>>('dlg');
 
   constructor() {
@@ -133,12 +136,14 @@ export class VendasAdmin {
   }
 
   protected async carregar() {
+    const vez = ++this.consulta;
     this.carregando.set(true);
     const passo = 30;
     let q = supabase.from('vendas').select(SELECT_VENDA).order('criada_em', { ascending: false });
     if (this.vendedor()) q = q.eq('vendedor_id', this.vendedor()!);
     if (this.status()) q = q.eq('status', this.status()!);
     const { data, error } = await q.range(this.pagina * passo, this.pagina * passo + passo - 1);
+    if (vez !== this.consulta) return;
     this.carregando.set(false);
     if (error) return this.erro.set(mensagemErro(error));
     this.pagina++;

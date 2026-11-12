@@ -7,10 +7,11 @@ import { PAGAMENTOS, SELECT_VENDA, VendaLinha } from '../../core/models';
 import { BrlPipe, DataHoraPipe, Icone, Toast } from '../../shared/ui';
 import { NotinhaService, notinhaDeLinha } from '../../core/notinha.service';
 import { SeletorIdioma } from '../../shared/idioma';
+import { Ajuda } from '../../shared/ajuda';
 
 @Component({
   selector: 'app-minhas-vendas',
-  imports: [BrlPipe, DataHoraPipe, Icone, SeletorIdioma],
+  imports: [BrlPipe, DataHoraPipe, Icone, SeletorIdioma, Ajuda],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -23,7 +24,7 @@ import { SeletorIdioma } from '../../shared/idioma';
 
       @if (vendas.minhaFila().length) {
         <section>
-          <h2>Aguardando envio</h2>
+          <h2 class="rotulo-ajuda">Aguardando envio<app-ajuda sobre="Aguardando envio" texto="Vendas feitas sem internet: estão guardadas neste aparelho e são enviadas sozinhas quando a conexão voltar." /></h2>
           <ul class="lista fila">
             @for (v of vendas.minhaFila(); track v.id) {
               <li>

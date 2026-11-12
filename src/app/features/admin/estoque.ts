@@ -6,6 +6,7 @@ import { supabase, mensagemErro } from '../../core/supabase';
 import { ItemCatalogo } from '../../core/models';
 import { BrlPipe, DataHoraPipe, Ident, Icone, Toast, baixarCsv } from '../../shared/ui';
 import { Scanner } from '../../shared/scanner';
+import { Ajuda } from '../../shared/ajuda';
 
 interface Mov {
   tipo: string;
@@ -25,7 +26,7 @@ export const NOME_MOV: Record<string, string> = {
 
 @Component({
   selector: 'app-estoque',
-  imports: [FormsModule, RouterLink, BrlPipe, DataHoraPipe, Ident, Icone, Scanner],
+  imports: [FormsModule, RouterLink, BrlPipe, DataHoraPipe, Ident, Icone, Scanner, Ajuda],
   template: `
     <main class="pagina">
       <header class="cabecalho">
@@ -92,7 +93,10 @@ export const NOME_MOV: Record<string, string> = {
           @case ('entrada') {
             <div class="form">
               <label class="campo"><span>Quantidade que chegou</span><input type="number" min="1" inputmode="numeric" [ngModel]="qtd()" (ngModelChange)="qtd.set($event)" /></label>
-              <label class="campo"><span>Custo por unidade (opcional)</span><input type="number" min="0" step="0.01" inputmode="decimal" [ngModel]="custo()" (ngModelChange)="custo.set($event)" /></label>
+              <div class="campo">
+                <span class="rotulo-ajuda"><label for="entrada-custo">Custo por unidade (opcional)</label><app-ajuda sobre="Custo por unidade" texto="Se informado, vira o custo desta variação e entra no lucro estimado do Painel." /></span>
+                <input id="entrada-custo" type="number" min="0" step="0.01" inputmode="decimal" [ngModel]="custo()" (ngModelChange)="custo.set($event)" />
+              </div>
               <label class="campo"><span>Observação (opcional)</span><input [ngModel]="obs()" (ngModelChange)="obs.set($event)" /></label>
               <button class="btn ok bloco" [disabled]="!(qtd() > 0) || salvando()" (click)="entrada()">Registrar entrada ({{ qtd() || 0 }})</button>
             </div>
@@ -100,7 +104,10 @@ export const NOME_MOV: Record<string, string> = {
           @case ('ajuste') {
             <div class="form">
               <p class="muted small">Use para corrigir contagem, perda ou defeito. Fica registrado no histórico com o motivo.</p>
-              <label class="campo"><span>Quantidade correta</span><input type="number" min="0" inputmode="numeric" [ngModel]="qtd()" (ngModelChange)="qtd.set($event)" /></label>
+              <div class="campo">
+                <span class="rotulo-ajuda"><label for="ajuste-qtd">Quantidade correta</label><app-ajuda sobre="Quantidade correta" texto="Digite quanto existe agora na prateleira, não a diferença: o sistema calcula a diferença sozinho." /></span>
+                <input id="ajuste-qtd" type="number" min="0" inputmode="numeric" [ngModel]="qtd()" (ngModelChange)="qtd.set($event)" />
+              </div>
               <label class="campo"><span>Motivo</span><input [ngModel]="obs()" (ngModelChange)="obs.set($event)" placeholder="Ex.: contagem de inventário" /></label>
               <button class="btn bloco" [disabled]="qtd() === null || qtd() < 0 || !obs().trim() || salvando()" (click)="ajuste()">Ajustar estoque para {{ qtd() }}</button>
             </div>

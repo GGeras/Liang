@@ -78,6 +78,9 @@ export class Ocorrencias {
   protected lista = signal<Ocorrencia[]>([]);
   protected erro = signal('');
 
+  /** Aba trocada antes de a resposta chegar: só a da aba atual vale. */
+  private consulta = 0;
+
   constructor() {
     this.carregar();
   }
@@ -88,12 +91,14 @@ export class Ocorrencias {
   }
 
   private async carregar() {
+    const vez = ++this.consulta;
     const { data, error } = await supabase
       .from('ocorrencias')
       .select('id, tipo, mensagem, resolvida, criado_em, resolvida_em, dados, usuario:perfis!ocorrencias_usuario_id_fkey(nome)')
       .eq('resolvida', this.resolvidas())
       .order('criado_em', { ascending: false })
       .limit(100);
+    if (vez !== this.consulta) return;
     if (error) return this.erro.set(mensagemErro(error));
     this.lista.set(data as unknown as Ocorrencia[]);
   }

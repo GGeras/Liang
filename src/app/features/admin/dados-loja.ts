@@ -6,6 +6,8 @@ import { LojaService } from '../../core/loja.service';
 import { DadosLoja, NotinhaVenda } from '../../core/models';
 import { mensagemErro } from '../../core/supabase';
 import { SimulacaoNotinha } from '../../shared/notinha-previa';
+import { Rascunho, RascunhoService } from '../../core/rascunho.service';
+import { AvisoRascunho } from '../../shared/aviso-rascunho';
 import { Toast } from '../../shared/ui';
 
 /** "12345678000190" → "12.345.678/0001-90"; outro formato fica como foi digitado. */
@@ -17,7 +19,7 @@ function formatarCnpj(v: string): string {
 /** Mais › Dados da loja: cabeçalho e rodapé da notinha, com a simulação ao lado. */
 @Component({
   selector: 'app-dados-loja',
-  imports: [FormsModule, SimulacaoNotinha],
+  imports: [FormsModule, SimulacaoNotinha, AvisoRascunho],
   template: `
     <main class="pagina larga">
       <header class="cabecalho">
@@ -26,6 +28,10 @@ function formatarCnpj(v: string): string {
           <p class="muted small">Cabeçalho e rodapé da notinha</p>
         </div>
       </header>
+
+      @if (guardado.recuperado(); as em) {
+        <app-aviso-rascunho [em]="em" (descartar)="descartarRascunho()" />
+      }
 
       <div class="duas">
         <form class="painel form" (ngSubmit)="salvar()">
@@ -137,19 +143,39 @@ export class DadosLojaPagina {
     effect(() => {
       const d = this.loja.dados();
       untracked(() => {
-        if (!base || this.igualA(base)) {
-          this.nome.set(d.nome);
-          this.cnpj.set(d.cnpj ?? '');
-          this.endereco.set(d.endereco);
-          this.telefone.set(d.telefone);
-          this.rodape.set(d.rodape);
-        }
+        if (!base || this.igualA(base)) this.preencher(d);
         base = d;
       });
+    });
+    // Alteração não salva fica guardada no aparelho até salvar ou descartar
+    this.guardado = inject(RascunhoService).vincular<DadosLoja>('loja', {
+      estado: () => (this.alterado() ? this.rascunhoForm() : null),
+      restaurar: (d) => this.preencher(d),
     });
     // Com alteração não salva, a versão nova do app espera
     const liberar = inject(AtualizacaoService).bloquear(() => this.alterado());
     inject(DestroyRef).onDestroy(liberar);
+  }
+
+  /** Alteração não salva guardada no aparelho. */
+  protected guardado: Rascunho;
+
+  /** O formulário como está, sem os ajustes da simulação. */
+  private rascunhoForm(): DadosLoja {
+    return { nome: this.nome(), cnpj: this.cnpj() || null, endereco: this.endereco(), telefone: this.telefone(), rodape: this.rodape() };
+  }
+
+  private preencher(d: DadosLoja) {
+    this.nome.set(d.nome);
+    this.cnpj.set(d.cnpj ?? '');
+    this.endereco.set(d.endereco);
+    this.telefone.set(d.telefone);
+    this.rodape.set(d.rodape);
+  }
+
+  protected descartarRascunho() {
+    this.guardado.descartar();
+    this.preencher(this.loja.dados());
   }
 
   protected async salvar() {

@@ -92,6 +92,8 @@ export class Movimentos {
   protected temMais = signal(false);
   protected erro = signal('');
   private pagina = 0;
+  /** Filtro trocado com a lista ainda carregando: a resposta do filtro antigo é ignorada. */
+  private consulta = 0;
 
   constructor() {
     this.carregar();
@@ -105,11 +107,13 @@ export class Movimentos {
   }
 
   protected async carregar() {
+    const vez = ++this.consulta;
     this.carregando.set(true);
     const passo = 50;
     let q = supabase.from('movimentos').select(SELECT).order('criado_em', { ascending: false });
     if (this.tipo()) q = q.eq('tipo', this.tipo()!);
     const { data, error } = await q.range(this.pagina * passo, this.pagina * passo + passo - 1);
+    if (vez !== this.consulta) return;
     this.carregando.set(false);
     if (error) return this.erro.set(mensagemErro(error));
     this.pagina++;

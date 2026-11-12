@@ -42,16 +42,27 @@ export class Scanner implements OnDestroy {
   private video = viewChild<ElementRef<HTMLVideoElement>>('video');
   private stream?: MediaStream;
   private ativo = false;
+  /** Cada abertura tem um número: a câmera que termina de abrir depois de fechada é desligada. */
+  private vez = 0;
 
   async abrir() {
+    const d = this.dlg().nativeElement;
+    if (d.open) return;
+    const vez = ++this.vez;
     this.erro.set('');
-    this.dlg().nativeElement.showModal();
+    d.showModal();
     if (!('BarcodeDetector' in window)) {
       this.erro.set('Este navegador não lê códigos pela câmera. Use o Chrome no Android, um leitor físico, ou digite o código.');
       return;
     }
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      // Fechou enquanto a câmera abria (ou já abriu de novo): desliga esta
+      if (vez !== this.vez || !d.open) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      this.stream = stream;
       const v = this.video()!.nativeElement;
       v.srcObject = this.stream;
       await v.play();
@@ -76,7 +87,7 @@ export class Scanner implements OnDestroy {
       };
       loop();
     } catch {
-      this.erro.set('Não foi possível abrir a câmera. Verifique a permissão do navegador.');
+      if (vez === this.vez && d.open) this.erro.set('Não foi possível abrir a câmera. Verifique a permissão do navegador.');
     }
   }
 
@@ -85,6 +96,7 @@ export class Scanner implements OnDestroy {
   }
 
   parar() {
+    this.vez++;
     this.ativo = false;
     this.stream?.getTracks().forEach((t) => t.stop());
     this.stream = undefined;

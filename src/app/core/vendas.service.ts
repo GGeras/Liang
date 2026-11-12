@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { supabase } from './supabase';
+import { erroDeRede, supabase } from './supabase';
 import { AuthService } from './auth.service';
 import { CatalogoService } from './catalogo.service';
 import { AvisoVenda, FormaPagamento, ItemCarrinho, TipoPreco, VendaPendente, precoDe } from './models';
@@ -15,11 +15,6 @@ interface RespostaRpc {
   erro?: string;
   total?: number;
   faltando?: { codigo?: string | null; codigo_barras?: string | null; produto?: string; variacao?: string; pedido?: number; disponivel?: number; erro?: string }[];
-}
-
-function erroDeRede(e: unknown) {
-  const m = (e as { message?: string })?.message ?? '';
-  return !navigator.onLine || /Failed to fetch|NetworkError|Load failed|fetch/i.test(m);
 }
 
 export function motivoRecusa(r: RespostaRpc): string {
@@ -125,6 +120,11 @@ export class VendasService {
     return { status: 'na_fila', total: venda.total_previsto, venda };
   }
 
+  /**
+   * Internet lenta: depois de 15 s a venda vai para a fila do aparelho em vez de
+   * prender o vendedor em "Registrando…". Reenviar é seguro: o id é o mesmo e o
+   * servidor reconhece a venda que já tiver chegado (não registra duas vezes).
+   */
   private async enviar(v: VendaPendente, offline: boolean): Promise<RespostaRpc> {
     const { data, error } = await supabase.rpc('registrar_venda', {
       p_id: v.id,
@@ -134,7 +134,7 @@ export class VendasService {
       p_itens: v.itens.map((i) => ({ variacao_id: i.variacao_id, quantidade: i.quantidade })),
       p_criada_em: v.criada_em,
       p_offline: offline,
-    });
+    }).abortSignal(AbortSignal.timeout(15_000));
     if (error) throw error;
     return data as RespostaRpc;
   }

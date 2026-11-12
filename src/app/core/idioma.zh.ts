@@ -48,6 +48,9 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Português': 'Português',
 
   // Faixas e avisos gerais
+  'O servidor demorou a responder. Confira a internet e tente de novo.': '服务器响应超时。请检查网络后重试。',
+  'Alterações não salvas recuperadas': '已恢复未保存的修改',
+  'Descartar': '放弃',
   'Sem internet. As vendas ficam guardadas no aparelho.': '无网络。销售单会先保存在本机。',
   'Nova versão disponível. Termine o que está fazendo e atualize.': '有新版本。请完成当前操作后点击更新。',
   'Sem conexão com a internet.': '没有网络连接。',
@@ -360,6 +363,21 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Usuário atualizado': '用户已更新',
   'você': '我',
 
+  // Ajuda (?) ao lado de campos e blocos
+  'Custo por unidade': '单位成本',
+  'Devolver ao estoque': '退回库存',
+  'Lucro estimado': '预估利润',
+  'Custo': '成本',
+  'Se informado, vira o custo desta variação e entra no lucro estimado do Painel.': '填写后会成为该规格的成本，并计入概览中的预估利润。',
+  'Digite quanto existe agora na prateleira, não a diferença: o sistema calcula a diferença sozinho.': '请输入货架上现在的实际数量，而不是差额：系统会自动计算差额。',
+  'Sim se as peças voltaram inteiras para a loja; Não se ficaram com o cliente ou estão com defeito.': '配件完好退回店里选「是」；留在客户手中或有缺陷选「不退回」。',
+  'Vendedor vende e vê só as próprias vendas; Administrador também cuida de estoque, produtos, vendas e usuários.': '销售员只能销售并查看自己的销售记录；管理员还可管理库存、商品、销售和用户。',
+  'Desmarque para bloquear a entrada desta pessoa sem apagar as vendas e o histórico dela.': '取消勾选即可禁止此人登录，其销售和历史记录不会被删除。',
+  'Faturamento menos o custo cadastrado dos itens vendidos; itens sem custo ficam de fora da conta.': '营业额减去已售商品的登记成本；未登记成本的商品不计入。',
+  'Vendas feitas sem internet: estão guardadas neste aparelho e são enviadas sozinhas quando a conexão voltar.': '无网络时完成的销售：保存在此设备上，网络恢复后会自动上传。',
+  'Os 2 últimos dígitos do código 00-00; o app já sugere o próximo número livre deste tipo.': '00-00 编码的后两位；应用会自动建议该类别的下一个可用编号。',
+  'Quanto a loja pagou pela peça; só administradores veem, e serve para o lucro estimado do Painel.': '店铺购入该配件的价格；仅管理员可见，用于计算概览中的预估利润。',
+  'Quando o estoque chegar a este número, a peça aparece em Estoque baixo no Painel e em Abaixo do mínimo.': '库存降到此数量时，该配件会出现在概览的「库存预警」和「低于最低库存」中。',
   // Dicas das telas
   'Leia o código de barras ou digite os 4 números do código. O produto entra no carrinho na hora.': '扫描条形码或输入 4 位编码，商品会立即加入本单。',
   'Leia o código de barras do produto e complete o resto. Se houver mais de uma variação (cor, qualidade), cada uma tem o seu código.': '先扫描商品条形码，再填写其余信息。如有多个规格（颜色、品质），每个规格各有自己的条码。',
@@ -384,6 +402,10 @@ export const TEXTOS_ZH: Record<string, string> = {
 
 /** Textos com partes variáveis: cada {} é um número, nome ou preço. */
 export const MODELOS_ZH: Record<string, string> = {
+  'Ajuda: {}': '帮助：{}',
+  // Rascunhos e erros
+  'Feitas em {}. Revise e salve.': '修改于 {}。请检查后保存。',
+  'A venda não foi registrada: {}': '销售未登记：{}',
   // Notinha
   'Venda nº {}': '销售单号 {}',
   // Faixas

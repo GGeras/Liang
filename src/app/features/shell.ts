@@ -1,5 +1,5 @@
-import { Component, computed, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, computed, effect, inject, untracked } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { CatalogoService, ConexaoService } from '../core/catalogo.service';
 import { VendasService } from '../core/vendas.service';
@@ -103,6 +103,11 @@ export class Shell {
   );
 
   constructor() {
+    // Sessão encerrada pelo servidor (senha trocada, acesso revogado): volta para Entrar
+    const router = inject(Router);
+    effect(() => {
+      if (!this.auth.perfil()) untracked(() => router.navigateByUrl('/entrar'));
+    });
     this.catalogo.iniciar();
     this.vendas.iniciar();
     inject(LojaService).iniciar();

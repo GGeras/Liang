@@ -49,6 +49,7 @@ export class NotinhaService {
   /** Notinha aberta na simulação (folha com Imprimir e Fechar). */
   readonly aberta = signal<NotinhaVenda | null>(null);
   private impressa?: { ref: ComponentRef<Notinha>; host: HTMLElement; pagina: HTMLStyleElement };
+  private montando = false;
 
   abrir(n: NotinhaVenda) {
     this.aberta.set(n);
@@ -99,6 +100,17 @@ export class NotinhaService {
   }
 
   async imprimir(venda: NotinhaVenda) {
+    // Toque duplo em Imprimir: a primeira impressão ainda está sendo montada
+    if (this.montando) return;
+    this.montando = true;
+    try {
+      await this.montarEImprimir(venda);
+    } finally {
+      this.montando = false;
+    }
+  }
+
+  private async montarEImprimir(venda: NotinhaVenda) {
     this.limpar();
     const host = document.createElement('div');
     host.id = 'impressao';
@@ -111,15 +123,16 @@ export class NotinhaService {
     ref.setInput('loja', this.loja.dados());
     this.appRef.attachView(ref.hostView);
     ref.changeDetectorRef.detectChanges();
+    const pagina = document.createElement('style');
+    pagina.id = 'pagina-notinha';
+    // Registrada já: o que for montado aqui sempre sai na limpeza
+    this.impressa = { ref, host, pagina };
 
     // A fonte muda a altura: mede só depois de carregada
     await document.fonts?.ready;
     const alturaMm = Math.ceil((host.getBoundingClientRect().height / PX_POR_MM) * 2) / 2;
-    const pagina = document.createElement('style');
-    pagina.id = 'pagina-notinha';
     pagina.textContent = `@page { size: 80mm ${alturaMm}mm; margin: 0; }`;
     document.head.appendChild(pagina);
-    this.impressa = { ref, host, pagina };
 
     addEventListener('afterprint', () => this.limpar(), { once: true });
     window.print();

@@ -8,6 +8,9 @@ import { DataHoraPipe, Ident, Icone, Toast, formatarBRL, identTexto } from '../.
 import { Scanner } from '../../shared/scanner';
 import { Tipo } from './produtos';
 import { IdiomaService } from '../../core/idioma.service';
+import { RascunhoService } from '../../core/rascunho.service';
+import { AvisoRascunho } from '../../shared/aviso-rascunho';
+import { Ajuda } from '../../shared/ajuda';
 
 interface Variacao {
   id: string;
@@ -44,6 +47,22 @@ const CAMPOS_ZH: Record<string, string> = {
 };
 const PRECOS = new Set(['preco_atacado', 'preco_varejo', 'custo']);
 
+interface RascunhoProduto {
+  produtoId: string;
+  modo: 'barras' | 'codigo';
+  tipoId: number | null;
+  seq: number | null;
+  nome: string;
+  marca: string;
+  modelo: string;
+  descricao: string;
+  fotoUrl: string | null;
+  ativo: boolean;
+  variacoes: Variacao[];
+  compat: Compat[];
+  compatRemovidas: string[];
+}
+
 interface Compat {
   id: string;
   modelo: string;
@@ -54,14 +73,19 @@ interface Compat {
 
 @Component({
   selector: 'app-produto-form',
-  imports: [FormsModule, RouterLink, Ident, Icone, DataHoraPipe, Scanner],
+  imports: [FormsModule, RouterLink, Ident, Icone, DataHoraPipe, Scanner, AvisoRascunho, Ajuda],
   template: `
-    <main class="pagina">
+    <!-- Campos das variações e compatibilidades mudam os objetos direto (ngModel): input/change avisam o rascunho -->
+    <main class="pagina" (input)="mexeu()" (change)="mexeu()">
       <header class="cabecalho">
         <a class="btn-icone" routerLink="/admin/produtos" aria-label="Voltar"><i-con nome="voltar" /></a>
         <h1 class="titulo">{{ novo() ? 'Novo produto' : 'Editar produto' }}</h1>
         <app-ident [codigo]="modo() === 'codigo' ? codigo() : null" [barras]="modo() === 'barras' ? variacoes()[0]?.codigo_barras : null" />
       </header>
+
+      @if (rascunho.recuperado(); as em) {
+        <app-aviso-rascunho [em]="em" (descartar)="descartarRascunho()" />
+      }
 
       @if (erro()) {
         <p class="erro-msg">{{ erro() }}</p>
@@ -100,10 +124,10 @@ interface Compat {
             </select>
           </label>
           @if (modo() === 'codigo') {
-            <label class="campo">
-              <span>Número no tipo</span>
-              <input type="number" min="0" max="99" inputmode="numeric" [ngModel]="seq()" (ngModelChange)="seq.set($event)" />
-            </label>
+            <div class="campo">
+              <span class="rotulo-ajuda"><label for="produto-seq">Número no tipo</label><app-ajuda sobre="Número no tipo" texto="Os 2 últimos dígitos do código 00-00; o app já sugere o próximo número livre deste tipo." /></span>
+              <input id="produto-seq" type="number" min="0" max="99" inputmode="numeric" [ngModel]="seq()" (ngModelChange)="seq.set($event)" />
+            </div>
           }
         </div>
         @if (!tipos().length) {
@@ -156,8 +180,14 @@ interface Compat {
               <label class="campo span2"><span>Nome da variação</span><input [(ngModel)]="v.nome" /></label>
               <label class="campo"><span>Preço atacado</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.preco_atacado" /></label>
               <label class="campo"><span>Preço varejo</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.preco_varejo" /></label>
-              <label class="campo"><span>Custo (opcional)</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.custo" /></label>
-              <label class="campo"><span>Estoque mínimo</span><input type="number" min="0" inputmode="numeric" [(ngModel)]="v.estoque_minimo" /></label>
+              <div class="campo">
+                <span class="rotulo-ajuda"><label [attr.for]="'custo-' + v.id">Custo (opcional)</label>@if (idx === 0) {<app-ajuda sobre="Custo" texto="Quanto a loja pagou pela peça; só administradores veem, e serve para o lucro estimado do Painel." />}</span>
+                <input [id]="'custo-' + v.id" type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.custo" />
+              </div>
+              <div class="campo">
+                <span class="rotulo-ajuda"><label [attr.for]="'minimo-' + v.id">Estoque mínimo</label>@if (idx === 0) {<app-ajuda sobre="Estoque mínimo" texto="Quando o estoque chegar a este número, a peça aparece em Estoque baixo no Painel e em Abaixo do mínimo." />}</span>
+                <input [id]="'minimo-' + v.id" type="number" min="0" inputmode="numeric" [(ngModel)]="v.estoque_minimo" />
+              </div>
             </div>
             <div class="rodape-var">
               <label class="ativo"><input type="checkbox" [(ngModel)]="v.ativo" /> Ativa</label>
@@ -263,7 +293,7 @@ export class ProdutoForm {
   private catalogo = inject(CatalogoService);
   private auth = inject(AuthService);
 
-  protected produtoId = signal(crypto.randomUUID());
+  protected produtoId = signal<string>(crypto.randomUUID());
   protected novo = computed(() => !this.id());
   protected tipos = signal<Tipo[]>([]);
   protected tipoId = signal<number | null>(null);
@@ -283,6 +313,22 @@ export class ProdutoForm {
   protected erro = signal('');
   protected historico = signal<Alteracao[]>([]);
 
+  /** Já carregou do servidor (o rascunho só entra depois, por cima). */
+  private carregado = signal(false);
+  /** O que veio do servidor, para saber se há alteração não salva. */
+  private base = '';
+  /** Muda a cada digitação (os campos de variação não são signals). */
+  private versao = signal(0);
+  protected rascunho = inject(RascunhoService).vincular<RascunhoProduto>(() => `produto:${this.id() ?? 'novo:' + (this.barras()?.trim() ?? '')}`, {
+    pronto: () => this.carregado(),
+    estado: () => {
+      this.versao();
+      const f = this.foto();
+      return JSON.stringify(f) === this.base ? null : f;
+    },
+    restaurar: (r) => this.aplicar(r),
+  });
+
   /** Novo produto começa por código de barras (a maioria das peças tem). */
   protected modo = signal<'barras' | 'codigo'>('barras');
 
@@ -296,6 +342,55 @@ export class ProdutoForm {
 
   protected pad(n: number) {
     return String(n).padStart(2, '0');
+  }
+
+  protected mexeu() {
+    this.versao.update((v) => v + 1);
+  }
+
+  /** Retrato do formulário (para o rascunho). */
+  private foto(): RascunhoProduto {
+    return {
+      produtoId: this.produtoId(),
+      modo: this.modo(),
+      tipoId: this.tipoId(),
+      seq: this.seq(),
+      nome: this.nome(),
+      marca: this.marca(),
+      modelo: this.modelo(),
+      descricao: this.descricao(),
+      fotoUrl: this.fotoUrl(),
+      ativo: this.ativo(),
+      variacoes: this.variacoes().map((v) => ({ ...v })),
+      compat: this.compat().map((c) => ({ ...c })),
+      compatRemovidas: [...this.compatRemovidas],
+    };
+  }
+
+  private aplicar(r: RascunhoProduto) {
+    this.produtoId.set(r.produtoId);
+    this.modo.set(r.modo);
+    this.tipoId.set(r.tipoId);
+    this.seq.set(r.seq);
+    this.nome.set(r.nome);
+    this.marca.set(r.marca);
+    this.modelo.set(r.modelo);
+    this.descricao.set(r.descricao);
+    this.fotoUrl.set(r.fotoUrl);
+    this.ativo.set(r.ativo);
+    this.variacoes.set(r.variacoes);
+    this.compat.set(r.compat);
+    this.compatRemovidas = [...r.compatRemovidas];
+    this.mexeu();
+  }
+
+  /** Volta ao que está salvo no servidor (ou ao formulário vazio). */
+  protected async descartarRascunho() {
+    this.rascunho.descartar();
+    this.carregado.set(false);
+    this.aplicar(this.vazio());
+    this.erro.set('');
+    await this.carregar();
   }
 
   private variacaoVazia(nome = ''): Variacao {
@@ -323,6 +418,20 @@ export class ProdutoForm {
     );
   }
 
+  /** Formulário como abre num produto novo. */
+  private vazio(): RascunhoProduto {
+    return {
+      produtoId: crypto.randomUUID(), modo: 'barras', tipoId: null, seq: null, nome: '', marca: '', modelo: '',
+      descricao: '', fotoUrl: null, ativo: true, variacoes: [this.variacaoVazia('Padrão')], compat: [], compatRemovidas: [],
+    };
+  }
+
+  /** Fim do carregamento: guarda o retrato do que veio do servidor e libera o rascunho. */
+  private carregou() {
+    this.base = JSON.stringify(this.foto());
+    this.carregado.set(true);
+  }
+
   private async carregar() {
     const t = await supabase.from('tipos').select('id, nome').order('id');
     this.tipos.set((t.data ?? []) as Tipo[]);
@@ -333,7 +442,7 @@ export class ProdutoForm {
         this.variacoes()[0].codigo_barras = barras;
         this.variacoes.update((l) => [...l]);
       }
-      return;
+      return this.carregou();
     }
     const { data, error } = await supabase
       .from('produtos')
@@ -358,6 +467,8 @@ export class ProdutoForm {
     this.ativo.set(data.ativo);
     this.variacoes.set((data.variacoes as Variacao[]).sort((a, b) => a.nome.localeCompare(b.nome)));
     this.compat.set((data.compatibilidades as Compat[]).sort((a, b) => a.modelo.localeCompare(b.modelo)));
+    this.compatRemovidas = [];
+    this.carregou();
     const ids = [data.id, ...(data.variacoes as Variacao[]).map((v) => v.id), ...(data.compatibilidades as Compat[]).map((c) => c.id)];
     const h = await supabase
       .from('alteracoes_catalogo')
@@ -403,6 +514,8 @@ export class ProdutoForm {
     this.tipoId.set(t);
     if (!this.novo()) return;
     const { data } = await supabase.from('produtos').select('seq').eq('tipo_id', t);
+    // Trocou de tipo de novo antes da resposta: a sugestão deste já não vale
+    if (this.tipoId() !== t) return;
     const usados = new Set((data ?? []).map((d) => d.seq));
     let s = 1;
     while (usados.has(s) && s < 99) s++;
@@ -528,6 +641,8 @@ export class ProdutoForm {
       });
       if (error) throw error;
       this.compatRemovidas = [];
+      this.rascunho.descartar();
+      this.base = JSON.stringify(this.foto());
 
       this.toast.mostrar(`Produto ${this.modo() === 'codigo' ? this.codigo() : this.nome().trim()} salvo`, 'ok');
       await this.catalogo.atualizar();
