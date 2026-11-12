@@ -51,6 +51,7 @@ export interface VendaPendente {
     /** Para a notinha (vendas guardadas antes desta versão não têm). */
     produto?: string;
     variacao?: string;
+    tipo?: string;
     preco_unitario?: number;
   }[];
   total_previsto: number;
@@ -96,11 +97,11 @@ export interface VendaLinha {
   offline: boolean;
   motivo_cancelamento: string | null;
   vendedor?: { nome: string } | null;
-  venda_itens: { quantidade: number; preco_unitario: number; variacoes: { nome: string; codigo_barras: string | null; produtos: { codigo: string | null; nome: string } } }[];
+  venda_itens: { quantidade: number; preco_unitario: number; variacoes: { nome: string; codigo_barras: string | null; produtos: { codigo: string | null; nome: string; tipos?: { nome: string } | null } } }[];
 }
 
 export const SELECT_VENDA =
-  'id, cliente_nome, tipo_preco, forma_pagamento, total, status, criada_em, offline, motivo_cancelamento, estoque_devolvido, vendedor:perfis!vendas_vendedor_id_fkey(nome), venda_itens(quantidade, preco_unitario, variacoes(nome, codigo_barras, produtos(codigo, nome)))';
+  'id, cliente_nome, tipo_preco, forma_pagamento, total, status, criada_em, offline, motivo_cancelamento, estoque_devolvido, vendedor:perfis!vendas_vendedor_id_fkey(nome), venda_itens(quantidade, preco_unitario, variacoes(nome, codigo_barras, produtos(codigo, nome, tipos(nome))))';
 
 /** Cabeçalho e rodapé da notinha (tabela `loja`, uma linha só). */
 export interface DadosLoja {
@@ -120,7 +121,8 @@ export interface NotinhaVenda {
   cliente: string;
   tipo_preco: TipoPreco;
   pagamento: FormaPagamento;
-  itens: { codigo: string | null; nome: string; variacao: string; quantidade: number; preco_unitario: number }[];
+  /** `tipo`: nome do tipo (categoria); a notinha agrupa os itens por ele. */
+  itens: { codigo: string | null; tipo?: string; nome: string; variacao: string; quantidade: number; preco_unitario: number }[];
   total: number;
   /** Venda feita sem internet que ainda não chegou ao servidor. */
   pendente: boolean;
