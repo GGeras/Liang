@@ -32,6 +32,7 @@ A notinha sai pelo próprio Chrome. Com o atalho abaixo (`--kiosk-printing`), o 
 ## Como a impressão funciona (para manutenção)
 - A notinha é o componente `app-notinha` (`src/app/shared/notinha.ts`), com o CSS em `src/_notinha.scss`. A simulação na tela usa o mesmo componente e o mesmo CSS.
 - Ao imprimir, `NotinhaService.imprimir` monta a notinha em `#impressao` (fora do app), mede a altura e define `@page { size: 80mm <altura>mm; margin: 0 }`. `size: 80mm auto` não funciona no Chrome: ele descarta a regra e usa papel Carta.
+- O QR code do WhatsApp é gerado no app (biblioteca `uqr`, sem internet) a partir do telefone da loja, quando ele é celular com DDD; com telefone fixo ou vazio, a notinha sai sem QR.
 - Conteúdo com 72 mm (área impressa da TM-T20) centralizado nos 80 mm, só preto puro, fonte de 11 e 12 px.
 - Para conferir que o papel sai igual à simulação: `npm run build && node ferramentas/notinha-pdf.js` (requer `npm i --no-save pdfjs-dist@4.10.38`). Gera o PDF de 80 mm de cada caso e compara com a simulação em tamanho real.
 - **Ver tamanho real** usa milímetros do CSS (96 px por polegada). Ele bate com o papel encostado na tela quando a escala do Windows e o monitor correspondem a isso; se não bater, é só a tela: a impressão não muda.

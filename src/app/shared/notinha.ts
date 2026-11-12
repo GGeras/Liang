@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { encode } from 'uqr';
 import { DadosLoja, NotinhaVenda, PAGAMENTOS } from '../core/models';
 import { BrlPipe } from './ui';
 
@@ -10,6 +11,17 @@ const dataCompleta = new Intl.DateTimeFormat('pt-BR', {
   minute: '2-digit',
   timeZone: 'America/Sao_Paulo',
 });
+
+/**
+ * Número do WhatsApp a partir do telefone da loja: só celular brasileiro com DDD
+ * (11 dígitos, o terceiro é 9). Telefone fixo ou vazio: sem QR.
+ */
+export function whatsappDe(telefone: string): string | null {
+  let d = telefone.replace(/\D/g, '');
+  if (d.length === 13 && d.startsWith('55')) d = d.slice(2);
+  if (d.length === 12 && d.startsWith('0')) d = d.slice(1);
+  return /^[1-9]{2}9\d{8}$/.test(d) ? '55' + d : null;
+}
 
 /** Nº curto da venda: os 8 primeiros caracteres do id. */
 export const numeroCurto = (id: string) => id.slice(0, 8).toUpperCase();
@@ -32,7 +44,11 @@ export const numeroCurto = (id: string) => id.slice(0, 8).toUpperCase();
           <p>CNPJ {{ loja().cnpj }}</p>
         }
         @if (loja().endereco) {
-          <p class="nt-endereco">{{ loja().endereco }}</p>
+          <p class="nt-endereco">
+            @for (parte of enderecoPartes(); track $index) {
+              <span class="nt-junto">{{ parte }}</span>{{ ' ' }}
+            }
+          </p>
         }
         @if (loja().telefone) {
           <p>{{ loja().telefone }}</p>
@@ -83,19 +99,51 @@ export const numeroCurto = (id: string) => id.slice(0, 8).toUpperCase();
         <p class="nt-marca">CANCELADA</p>
       }
 
+      @if (loja().rodape || qr()) {
+        <hr class="nt-sep" />
+        <footer class="nt-rodape">
+          @if (loja().rodape) {
+            <p>{{ loja().rodape }}</p>
+          }
+          @if (qr(); as q) {
+            <div class="nt-qr">
+              <svg [attr.viewBox]="'0 0 ' + q.tamanho + ' ' + q.tamanho" shape-rendering="crispEdges" role="img" aria-label="QR code do WhatsApp da loja">
+                <path [attr.d]="q.d" />
+              </svg>
+              <p><b>Chame no WhatsApp</b><br />Aponte a câmera do celular</p>
+            </div>
+          }
+        </footer>
+      }
       <hr class="nt-sep" />
-      <footer class="nt-rodape">
-        @if (loja().rodape) {
-          <p>{{ loja().rodape }}</p>
-        }
-        <p class="nt-fiscal">NÃO É DOCUMENTO FISCAL</p>
-      </footer>
+      <p class="nt-fiscal">NÃO É DOCUMENTO FISCAL</p>
     </article>
   `,
 })
 export class Notinha {
   readonly venda = input.required<NotinhaVenda>();
   readonly loja = input.required<DadosLoja>();
+
+  /** QR que abre a conversa no WhatsApp da loja (gerado aqui, funciona sem internet). */
+  protected qr = computed(() => {
+    const numero = whatsappDe(this.loja().telefone);
+    if (!numero) return null;
+    const { data, size } = encode(`https://wa.me/${numero}`, { ecc: 'M', border: 0 });
+    let d = '';
+    data.forEach((linha, y) => linha.forEach((preto, x) => preto && (d += `M${x} ${y}h1v1h-1z`)));
+    return { tamanho: size, d };
+  });
+
+  /**
+   * Endereço em pedaços separados pelas vírgulas, sem separar a vírgula do número
+   * que vem depois ("Rua X, 245 - Centro," "Uberlândia - MG, 38400-104"):
+   * a linha só quebra entre esses pedaços, nunca no meio deles.
+   */
+  protected enderecoPartes = computed(() =>
+    this.loja()
+      .endereco.split(/(?<=,)\s+(?!\d)/)
+      .filter(Boolean),
+  );
 
   protected numero = computed(() => numeroCurto(this.venda().id));
   protected data = computed(() => dataCompleta.format(new Date(this.venda().criada_em)).replace(',', ''));
