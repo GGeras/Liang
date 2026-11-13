@@ -15,8 +15,8 @@
  */
 export const TEXTOS_ZH: Record<string, string> = {
   // Navegação e geral
-  'Liang': 'Liang',
-  'Estoque Mundo Mix': 'Mundo Mix 库存管理',
+  'Mundo Mix': 'Mundo Mix',
+  'Estoque e vendas': '库存与销售',
   'Navegação principal': '主导航',
   'Vender': '开单',
   'Catálogo': '商品目录',
@@ -72,8 +72,8 @@ export const TEXTOS_ZH: Record<string, string> = {
   'Sem acesso? Peça a um administrador para criar seu usuário.': '没有账号？请让管理员为您创建。',
   'Baixar o aplicativo': '下载应用',
   'Instalando…': '正在安装…',
-  'Abrir o Liang': '打开 Liang',
-  'Pronto! O Liang está na tela inicial.': '完成！Liang 已添加到主屏幕。',
+  'Abrir o aplicativo': '打开应用',
+  'Pronto! O aplicativo está na tela inicial.': '完成！应用已添加到主屏幕。',
   'No iPhone: toque em Compartilhar e depois em "Adicionar à Tela de Início".': 'iPhone：点击“分享”，再点“添加到主屏幕”。',
   'Abra este link no Chrome para baixar o aplicativo.': '请用 Chrome 打开此链接下载应用。',
 

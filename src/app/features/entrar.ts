@@ -12,8 +12,8 @@ import { SeletorIdioma } from '../shared/idioma';
     <main class="entrar">
       <div class="marca">
         <span class="etiqueta grande">00-00</span>
-        <h1>Liang</h1>
-        <p class="muted">Estoque Mundo Mix</p>
+        <h1>Mundo Mix</h1>
+        <p class="muted">Estoque e vendas</p>
       </div>
 
       <form class="painel form" (ngSubmit)="entrar()">
@@ -39,7 +39,7 @@ import { SeletorIdioma } from '../shared/idioma';
   styles: `
     .entrar { min-height: 100dvh; display: grid; align-content: center; gap: 1.5rem; padding: 1.5rem 1rem; max-width: 420px; margin: 0 auto; }
     .marca { display: grid; gap: .35rem; }
-    .marca h1 { font-size: 3rem; font-stretch: 125%; letter-spacing: -.01em; }
+    .marca h1 { font-size: clamp(2.3rem, 12vw, 3rem); font-stretch: 125%; letter-spacing: -.01em; }
     .etiqueta.grande { font-size: 1.1rem; justify-self: start; }
     .form { display: grid; gap: 1rem; padding: 1.25rem; }
     .rodape { text-align: center; }
