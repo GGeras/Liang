@@ -2,7 +2,7 @@
 // Sem este arquivo o Wrangler deduz a pasta errada (`dist/`) e o site responde 404.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "liang",
+  "name": "estoque",
   "compatibility_date": "2026-11-04",
   "workers_dev": true,
   "preview_urls": true,

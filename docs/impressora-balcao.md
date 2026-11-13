@@ -18,7 +18,7 @@ A notinha sai pelo próprio Chrome. Com o atalho abaixo (`--kiosk-printing`), o 
 1. Botão direito na área de trabalho › **Novo › Atalho**.
 2. Em local do item, cole (uma linha só):
    ```
-   "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing --user-data-dir="C:\LiangBalcao" --app=https://liang.jg8598917.workers.dev/vender
+   "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing --user-data-dir="C:\LiangBalcao" --app=https://estoque.mundomix.workers.dev/vender
    ```
 3. Nome: **Liang Balcão**.
 - `--user-data-dir` cria um perfil só para o balcão: assim o modo sem janela vale mesmo com outro Chrome aberto. Na primeira vez, entre no Liang com o usuário do balcão (a sessão fica guardada).

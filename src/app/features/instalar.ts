@@ -4,16 +4,16 @@ import { InstalacaoService } from '../core/instalacao.service';
 import { Icone } from '../shared/ui';
 import { SeletorIdioma } from '../shared/idioma';
 
-/** /instalar — só o botão que instala o Liang (PWA). Pública, sem login. */
+/** /instalar — só o botão que instala o aplicativo Mundo Mix (PWA). Pública, sem login. */
 @Component({
   selector: 'app-instalar',
   imports: [Icone, SeletorIdioma],
   template: `
     <main class="instalar">
       <img src="icons/icon-192x192.png" alt="" width="96" height="96" class="icone-app" />
-      <h1>Liang</h1>
+      <h1>Mundo Mix</h1>
       @if (inst.instalado()) {
-        <button class="btn bloco grande" type="button" (click)="abrir()">Abrir o Liang</button>
+        <button class="btn bloco grande" type="button" (click)="abrir()">Abrir o aplicativo</button>
       } @else {
         <button class="btn bloco grande" type="button" (click)="instalar()" [disabled]="instalando()">
           <i-con nome="baixar" /> {{ instalando() ? 'Instalando…' : 'Baixar o aplicativo' }}
@@ -43,7 +43,7 @@ export class Instalar {
     if (this.inst.podeInstalar()) {
       this.instalando.set(true);
       try {
-        if (await this.inst.instalar()) this.dica.set('Pronto! O Liang está na tela inicial.');
+        if (await this.inst.instalar()) this.dica.set('Pronto! O aplicativo está na tela inicial.');
       } finally {
         this.instalando.set(false);
       }

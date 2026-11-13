@@ -5,7 +5,7 @@ PWA mobile para controle de estoque de peças de celular (telas, tampas, conecto
 ## Stack
 - **Front:** Angular 20 (standalone, signals, zoneless) como PWA instalável
 - **Banco/Auth/Fotos:** Supabase (projeto `Liang`, região São Paulo)
-- **Hospedagem:** Cloudflare Workers (static assets) · https://liang.jg8598917.workers.dev
+- **Hospedagem:** Cloudflare Workers (static assets) · https://estoque.mundomix.workers.dev
 
 ## Regras principais
 | Regra | Onde é garantida |
@@ -46,14 +46,14 @@ npm run build      # saída em dist/liang/browser
 ```
 
 ## Deploy no Cloudflare (Workers)
-Worker `liang` ligado ao GitHub (Workers & Pages › liang › Settings › Build):
+Worker `estoque` ligado ao GitHub (Workers & Pages › estoque › Settings › Build):
 - Build command: `npm run build`
 - Deploy command: `npx wrangler deploy` (branch `main`); outras branches geram link de prévia
 - Root directory: `/`
 
 A configuração fica em `wrangler.jsonc`: pasta `dist/liang/browser` e modo SPA (as rotas do app devolvem o `index.html`).
 `public/_headers` traz a CSP, os cabeçalhos de segurança e evita cache do service worker.
-Endereço: https://liang.jg8598917.workers.dev
+Endereço: https://estoque.mundomix.workers.dev
 
 ## Primeiro administrador
 Crie o usuário em Supabase → Authentication → Add user (marque *Auto Confirm*), depois rode no SQL Editor:
