@@ -5,7 +5,7 @@ PWA mobile de controle de estoque de peças de celular (telas, tampas, conectore
 ## Stack e ambientes
 - Angular 20: standalone, signals, zoneless, `@if/@for`, componentes com template e estilos inline em `src/app/features/**`.
 - Supabase, projeto **Liang**, ref `irfgrdaoblycskbngqnh`, região `sa-east-1`. A chave publicável está em `src/environments/environment.ts` e pode ficar no front: quem garante a segurança é a RLS.
-- Hospedagem no Cloudflare Workers (static assets), projeto `liang`, endereço `https://liang.jg8598917.workers.dev`. Build `npm run build`, deploy `npx wrangler deploy` (automático a cada push no `main`). A configuração está em `wrangler.jsonc` (pasta `dist/liang/browser`, modo SPA); `public/_headers` traz a CSP. Não existe `_redirects`: o modo SPA do Worker já serve o app em todas as rotas.
+- Hospedagem no Cloudflare Workers (static assets), projeto (Worker) `estoque`, endereço `https://estoque.mundomix.workers.dev` (até 13/11/2026 era `liang.jg8598917.workers.dev`, que deixou de existir). Build `npm run build`, deploy `npx wrangler deploy` (automático a cada push no `main`). A configuração está em `wrangler.jsonc` (pasta `dist/liang/browser`, modo SPA); `public/_headers` traz a CSP. Não existe `_redirects`: o modo SPA do Worker já serve o app em todas as rotas.
 - Banco: migrations em `supabase/migrations/` (numeradas, nunca editar uma já aplicada; criar uma nova). Edge function `usuarios` em `supabase/functions/usuarios`.
 
 ## Regras de negócio (definidas com o dono; não mudar sem perguntar)
